@@ -15,58 +15,35 @@ int _printf(const char *format, ...)
 	char c;
 	char *str;
 
-	va_start(args, format);
-
 	if (!format)
 		return (-1);
+
+	va_start(args, format);
 
 	for (p = format; *p; p++)
 	{
 		if (*p == '%')
 		{
 			p++;
-			if (*p == '\0')
-			{
-				write(1, "%", 1);
-				count++;
-					break;
-			}
+			if (!*p)
+				return (count + write(1, "%", 1));
 			if (*p == 'c')
-			{
-				c = (char)va_arg(args, int);
-				write(1, &c, 1);
-				count++;
-			}
+				c = (char)va_arg(args, int), write(1, &c, 1), count++;
 			else if (*p == 's')
 			{
 				str = va_arg(args, char *);
 				if (!str)
 					str = "(null)";
 				while (*str)
-				{
-					write(1, str, 1);
-					str++;
-					count++;
-				}
+					write(1, str++, 1), count++;
 			}
 			else if (*p == '%')
-			{
-				c = '%';
-				write(1, &c, 1);
-				count++;
-			}
+				write(1, "%", 1), count++;
 			else
-			{
-				write(1, "%", 1);
-				write(1, p, 1);
-				count += 2;
-			}
+				write(1, "%", 1), write(1, p, 1), count += 2;
 		}
 		else
-		{
-			write(1, p, 1);
-			count += 2;
-		}
+			write(1, p, 1), count++;
 	}
 
 	va_end(args);
