@@ -25,6 +25,12 @@ int _printf(const char *format, ...)
 		if (*p == '%')
 		{
 			p++;
+			if (*p == '\0')
+			{
+				write(1, "%", 1);
+				count++;
+					break;
+			}
 			if (*p == 'c')
 			{
 				c = (char)va_arg(args, int);
@@ -49,11 +55,17 @@ int _printf(const char *format, ...)
 				write(1, &c, 1);
 				count++;
 			}
+			else
+			{
+				write(1, "%", 1);
+				write(1, p, 1);
+				count += 2;
+			}
 		}
 		else
 		{
 			write(1, p, 1);
-			count++;
+			count += 2;
 		}
 	}
 
