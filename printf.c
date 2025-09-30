@@ -26,7 +26,10 @@ int _printf(const char *format, ...)
 		{
 			p++;
 			if (!*p)
-				break;
+			{
+				va_end(args);
+				return (-1);
+			}
 			if (*p == 'c')
 				c = (char)va_arg(args, int), write(1, &c, 1), count++;
 			else if (*p == 's')
