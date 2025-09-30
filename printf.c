@@ -39,7 +39,7 @@ int _printf(const char *format, ...)
 			}
 			else if (*p == '%')
 				write(1, "%", 1), count++;
-			else
+			else if (*p)
 				write(1, "%", 1), write(1, p, 1), count += 2;
 		}
 		else
