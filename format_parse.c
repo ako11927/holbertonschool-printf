@@ -3,10 +3,10 @@
 /**
  * parse_format - parse a printf-style conversion after '%'
  * @fmt: full format string
- * @i: in/out index; on entry points at the spec or its flags; on exit at spec
- * @out: filled with parsed flags/width/precision/length/spec
+ * @i: index pointer into fmt
+ * @out: result holder for flags, width, precision, length and spec
  *
- * Return: 0 on success, -1 on error (e.g. premature end)
+ * Return: 0 on success, -1 on error
  */
 int parse_format(const char *fmt, int *i, fmt_t *out)
 {
