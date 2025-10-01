@@ -27,21 +27,34 @@ int _printf(const char *format, ...)
 			count++;
 			continue;
 		}
-		i++;
+
+		i++; /* move past % */
 		if (format[i] == '\0')
 		{
 			count = -1;
 			break;
 		}
-		k = handle_spec(format[i], &ap);
-		if (k < 0)
+
+		/* NEW: parse full spec (%[flags][width][.precision][length]spec) */
 		{
-			count = -1;
-			break;
+			fmt_t f;
+
+			if (parse_format(format, &i, &f) < 0)
+			{
+				count = -1;
+				break;
+			}
+			k = print_formatted(&f, &ap);
+			if (k < 0)
+			{
+				count = -1;
+				break;
+			}
+			count += k;
 		}
-		count += k;
 	}
 	va_end(ap);
 	_putchar_flush();
 	return (count);
 }
+
