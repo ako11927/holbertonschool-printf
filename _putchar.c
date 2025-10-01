@@ -1,62 +1,70 @@
 #include "main.h"
+#include <unistd.h>
+
+/* 1KB buffered writer for stdout */
+
+static char buf[1024];
+static int idx;
 
 /**
- * _putchar - buffered character writer
- * @c: character to write; pass -1 to flush buffer
- * Return: 1 on success, -1 on error
+ * _putchar - buffer a single char to stdout
+ * @c: character
+ * Return: 1 on success, -1 on write error
  */
 int _putchar(char c)
 {
-	static char buf[1024];
-	static int idx;
-	int r = 1;
-
-	if (c == -1 || idx >= 1023)
+	if (idx >= (int)sizeof(buf))
 	{
-		if (idx)
-			r = write(1, buf, idx);
+		ssize_t r = write(1, buf, idx);
+
+		if (r != idx)
+			return (-1);
 		idx = 0;
 	}
-	if (c != -1)
-		buf[idx++] = c;
-	return (r == -1 ? -1 : 1);
+	buf[idx++] = c;
+	return (1);
 }
 
 /**
- * _putchar_flush - flush internal buffer
+ * _putchar_flush - flush pending buffered output
  */
 void _putchar_flush(void)
 {
-	(void)_putchar(-1);
+	if (idx > 0)
+	{
+		/* ignore short writes here; project callers check return values */
+		(void)write(1, buf, idx);
+		idx = 0;
+	}
 }
 
 /**
- * print_char - legacy single-character printer
- * @c: character
- * Return: chars written or -1 on error
- */
-int print_char(char c)
-{
-	return (_putchar(c) == -1 ? -1 : 1);
-}
-
-/**
- * putnchar - print @c exactly @n times
- * @c: character to write
- * @n: count
- * Return: number written, or -1 on error
+ * putnchar - print a char repeated n times
+ * @c: character to repeat
+ * @n: times
+ * Return: number printed or -1 on error
  */
 int putnchar(char c, int n)
 {
-	int i, wrote = 0;
+	int i, cnt = 0;
 
-	if (n <= 0)
-		return (0);
 	for (i = 0; i < n; i++)
 	{
 		if (_putchar(c) == -1)
 			return (-1);
-		wrote++;
+		cnt++;
 	}
-	return (wrote);
+	return (cnt);
+}
+
+/**
+ * print_char - write one character
+ * @c: character
+ * Return: 1 on success, -1 on error
+ */
+int print_char(char c)
+{
+	if (_putchar(c) == -1)
+		return (-1);
+	return (1);
 }
