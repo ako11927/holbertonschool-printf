@@ -2,15 +2,13 @@
 #define MAIN_H
 
 #include <stdarg.h>
+#include <unistd.h>
 
-/* _printf function prototype */
+/* Core printf */
 int _printf(const char *format, ...);
 
-/* Helper functions prototypes */
-int print_char(va_list args);
-int print_string(va_list args);
-int print_percent(va_list args);
-int print_int(va_list args);
-int print_number(unsigned int n);
+/* helpers */
+int _putchar(char c);
+int print_int(long n);
 
 #endif /* MAIN_H */

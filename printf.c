@@ -1,41 +1,77 @@
 #include "main.h"
-#include <stdarg.h>
 
-/* _printf implementation */
 int _printf(const char *format, ...)
 {
-    va_list args;
-    int count = 0;
-    int i = 0;
+	va_list ap;
+	int i, count = 0;
 
-    if (!format)
-        return -1;
+	if (!format)
+		return (-1);
 
-    va_start(args, format);
+	va_start(ap, format);
 
-    while (format[i])
-    {
-        if (format[i] == '%')
-        {
-            i++;
-            if (format[i] == 'c')
-                count += print_char(args);
-            else if (format[i] == 's')
-                count += print_string(args);
-            else if (format[i] == '%')
-                count += print_percent(args);
-            else if (format[i] == 'd' || format[i] == 'i')
-                count += print_int(args);
-            else
-                count += write(1, &format[i], 1); /* unknown specifier prints as is */
-        }
-        else
-        {
-            count += write(1, &format[i], 1);
-        }
-        i++;
-    }
+	for (i = 0; format[i] != '\0'; i++)
+	{
+		if (format[i] != '%')
+		{
+			if (_putchar(format[i]) < 0)
+			{
+				count = -1;
+				break;
+			}
+			count++;
+			continue;
+		}
 
-    va_end(args);
-    return count;
+		/* we saw '%': look at next char */
+		i++;
+		if (format[i] == '\0')
+		{
+			/* trailing '%' is undefined; many projects return -1 */
+			count = -1;
+			break;
+		}
+
+		if (format[i] == 'c')
+		{
+			char c = (char)va_arg(ap, int);
+			if (_putchar(c) < 0) { count = -1; break; }
+			count++;
+		}
+		else if (format[i] == 's')
+		{
+			const char *s = va_arg(ap, const char *);
+			int j;
+
+			if (!s) s = "(null)";
+			for (j = 0; s[j] != '\0'; j++)
+			{
+				if (_putchar(s[j]) < 0) { count = -1; break; }
+				count++;
+			}
+			if (count < 0) break;
+		}
+		else if (format[i] == '%')
+		{
+			if (_putchar('%') < 0) { count = -1; break; }
+			count++;
+		}
+		else if (format[i] == 'd' || format[i] == 'i')
+		{
+			int val = va_arg(ap, int);
+			int k = print_int((long)val);
+			if (k < 0) { count = -1; break; }
+			count += k;
+		}
+		else
+		{
+			/* Unknown specifier: print '%' then the character */
+			if (_putchar('%') < 0 || _putchar(format[i]) < 0)
+			{ count = -1; break; }
+			count += 2;
+		}
+	}
+
+	va_end(ap);
+	return (count);
 }
