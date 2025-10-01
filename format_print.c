@@ -1,6 +1,13 @@
 #include "main.h"
 
 /* repeat char */
+/**
+ * putnchar - Write the same character multiple times.
+ * @c: Character to print.
+ * @n: Number of times to print @c.
+ *
+ * Return: Number of characters printed, or -1 on error.
+ */
 int putnchar(char c, int n)
 {
 	int k, r;
@@ -15,6 +22,15 @@ int putnchar(char c, int n)
 }
 
 /* utoa base 2..16 */
+/**
+ * utoa_base - Convert an unsigned long to a base-2..16 null-terminated string.
+ * @n: Value to convert.
+ * @base: Base (2..16).
+ * @upper: Non-zero to use uppercase digits.
+ * @buf: Output buffer (large enough for 64-bit + '\0').
+ *
+ * Return: Length of the string written (excluding the '\0').
+ */
 static int utoa_base(unsigned long n, int base, int upper, char *buf)
 {
 	const char *lo = "0123456789abcdef";
@@ -43,6 +59,14 @@ static int utoa_base(unsigned long n, int base, int upper, char *buf)
 }
 
 /* ints: d i u o x X */
+/**
+ * print_intlike - Print d, i, u, o, x, X according to parsed options.
+ * @f: Parsed format options.
+ * @ap: Pointer to the active va_list.
+ *
+ * Return: Characters printed, or -1 on error.
+ *         If the specifier is not one of these, returns -2 (not handled here).
+ */
 static int print_intlike(const fmt_t *f, va_list *ap)
 {
 	int base = 10, upper = 0, is_signed = 0;
@@ -204,6 +228,14 @@ static int print_intlike(const fmt_t *f, va_list *ap)
 }
 
 /* strings/chars/% with width + precision(for strings) */
+/**
+ * print_strlike - Print s, c, and %% with width/precision handling.
+ * @f: Parsed format options.
+ * @ap: Pointer to the active va_list.
+ *
+ * Return: Characters printed, or -1 on error.
+ *         If the specifier is not one of these, returns -2 (not handled here).
+ */
 static int print_strlike(const fmt_t *f, va_list *ap)
 {
 	int total = 0, pad, len, outlen, left = f->f_minus;
@@ -272,6 +304,13 @@ static int print_strlike(const fmt_t *f, va_list *ap)
 }
 
 /* route one specifier */
+/**
+ * print_formatted - Route a single conversion to the proper printer.
+ * @f: Parsed format options.
+ * @ap: Pointer to the active va_list.
+ *
+ * Return: Characters printed, or -1 on error.
+ */
 int print_formatted(const fmt_t *f, va_list *ap)
 {
 	int r;

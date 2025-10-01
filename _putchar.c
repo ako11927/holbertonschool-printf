@@ -26,7 +26,9 @@ int _putchar(char c)
 }
 
 /**
- * _putchar_flush - flush any pending buffered output
+ * _putchar_flush - Flush the internal write buffer.
+ *
+ * Return: 0 on success, or -1 on error.
  */
 void _putchar_flush(void)
 {

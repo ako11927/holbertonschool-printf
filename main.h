@@ -24,6 +24,18 @@ int print_rev(const char *s);
 int print_rot13(const char *s);
 
 /* format descriptor for flags/width/precision/length */
+/**
+ * struct fmt_s - parsed formatting options
+ * @f_plus: '+' flag
+ * @f_space: ' ' (space) flag
+ * @f_hash: '#' flag
+ * @f_zero: '0' flag
+ * @f_minus: '-' flag
+ * @width: field width, or -1 if not specified
+ * @precision: precision, or -1 if not specified
+ * @length: length modifier ('l', 'h', or 0)
+ * @spec: conversion specifier character
+ */
 typedef struct fmt_s
 {
 	int f_plus;
