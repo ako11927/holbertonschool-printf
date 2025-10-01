@@ -1,41 +1,54 @@
-.\" Manpage for _printf
-.TH _PRINTF 3 "October 2025" "Holberton School" "Library Functions Manual"
+.TH _printf 3 "Holberton" "User Commands"
 .SH NAME
 _printf \- produce output according to a format
 .SH SYNOPSIS
-.B #include "main.h"
-.br
 .B int _printf(const char *format, ...);
 .SH DESCRIPTION
 The
 .B _printf()
-function produces output according to a format string
-and optional arguments.
-
-Supported format specifiers are:
-.TP
-%c
-Print a single character.
-.TP
-%s
-Print a string of characters.
-.TP
-%%
-Print a literal percent sign.
-.TP
-%d, %i
-Print a signed decimal integer.
-
-If an unsupported specifier is found, the function prints
-the percent sign followed by the specifier character.
-
+function writes output to the standard output stream according to a
+.BR printf (3)
+style format string. Supported conversion specifiers include:
+.BR c ,
+.BR s ,
+.BR % ,
+.BR d ,
+.BR i ,
+.BR u ,
+.BR o ,
+.BR x ,
+.BR X ,
+.B b
+(binary),
+.B p
+(pointer),
+.B S
+(string with non printable characters as \\xXX),
+.B r
+(reverse),
+and
+.B R
+(ROT13).
+For non\-custom specifiers, the following features are handled:
+flags
+.BR + ,
+space,
+.BR # ,
+.BR 0 ,
+.BR \- ;
+field width and precision; and length modifiers
+.BR l
+and
+.BR h
+for
+.BR d , i , u , o , x , X .
+Output uses an internal 1024\-byte buffer to reduce write calls.
 .SH RETURN VALUE
-Upon success, the number of characters printed is returned.
-If an output error is encountered, -1 is returned.
-
+Upon success,
+.B _printf()
+returns the number of characters printed. On error, \-1 is returned.
 .SH SEE ALSO
-printf(3)
-
+.BR printf (3)
 .SH AUTHORS
 Ghaida A. (GitHub: GhaidaAL36)
 Ahmed K. (GitHub: ako11927)

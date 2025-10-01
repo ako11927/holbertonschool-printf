@@ -3,7 +3,6 @@
 /**
  * _printf - produces output according to a format
  * @format: format string
- *
  * Return: number of characters printed, or -1 on error
  */
 int _printf(const char *format, ...)
@@ -19,37 +18,19 @@ int _printf(const char *format, ...)
 	{
 		if (format[i] != '%')
 		{
-			if (_putchar(format[i]) < 0)
-			{
-				count = -1;
-				break;
-			}
+			if (_putchar(format[i]) < 0) { count = -1; break; }
 			count++;
 			continue;
 		}
+		i++;
+		if (format[i] == '\0') { count = -1; break; }
 
-		i++; /* move past % */
-		if (format[i] == '\0')
-		{
-			count = -1;
-			break;
-		}
-
-		/* NEW: parse full spec (%[flags][width][.precision][length]spec) */
+		/* parse %[flags][width][.precision][length]spec */
 		{
 			fmt_t f;
-
-			if (parse_format(format, &i, &f) < 0)
-			{
-				count = -1;
-				break;
-			}
+			if (parse_format(format, &i, &f) < 0) { count = -1; break; }
 			k = print_formatted(&f, &ap);
-			if (k < 0)
-			{
-				count = -1;
-				break;
-			}
+			if (k < 0) { count = -1; break; }
 			count += k;
 		}
 	}
@@ -57,4 +38,3 @@ int _printf(const char *format, ...)
 	_putchar_flush();
 	return (count);
 }
-
