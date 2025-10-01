@@ -1,8 +1,8 @@
 #include "main.h"
 
 /**
- * _putchar - buffered putchar
- * @c: character
+ * _putchar - buffered character writer
+ * @c: character to write; pass -1 to flush buffer
  * Return: 1 on success, -1 on error
  */
 int _putchar(char c)
@@ -13,7 +13,8 @@ int _putchar(char c)
 
 	if (c == -1 || idx >= 1023)
 	{
-		r = write(1, buf, idx);
+		if (idx)
+			r = write(1, buf, idx);
 		idx = 0;
 	}
 	if (c != -1)
@@ -22,29 +23,26 @@ int _putchar(char c)
 }
 
 /**
- * _putchar_flush - flush the internal buffer
- * Return: 1 (or -1 on error)
+ * _putchar_flush - flush internal buffer
  */
-int _putchar_flush(void)
+void _putchar_flush(void)
 {
-	return (_putchar(-1));
+	(void)_putchar(-1);
 }
 
 /**
- * print_char - print a single character (legacy helper)
- * @ap: va_list*
- * Return: chars written or -1
+ * print_char - legacy single-character printer
+ * @c: character
+ * Return: chars written or -1 on error
  */
-int print_char(va_list *ap)
+int print_char(char c)
 {
-	char c = (char)va_arg(*ap, int);
-
 	return (_putchar(c) == -1 ? -1 : 1);
 }
 
 /**
- * putnchar - write character @c exactly @n times
- * @c: character to repeat
+ * putnchar - print @c exactly @n times
+ * @c: character to write
  * @n: count
  * Return: number written, or -1 on error
  */
@@ -54,7 +52,6 @@ int putnchar(char c, int n)
 
 	if (n <= 0)
 		return (0);
-
 	for (i = 0; i < n; i++)
 	{
 		if (_putchar(c) == -1)
