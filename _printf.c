@@ -1,66 +1,73 @@
 #include "main.h"
 
 /**
- * _printf - produces output according to a format
+ * _printf - minimal printf clone for project
  * @format: format string
- *
  * Return: number of characters printed, or -1 on error
  */
 int _printf(const char *format, ...)
 {
 	va_list ap;
-	int i;
-	int count = 0;
-	int k;
+	int i = 0, count = 0;
 
-	if (format == NULL)
+	if (!format)
 		return (-1);
 
 	va_start(ap, format);
 
-	for (i = 0; format[i] != '\0'; i++)
+	while (format[i])
 	{
 		if (format[i] != '%')
 		{
-			if (_putchar(format[i]) < 0)
+			if (_putchar(format[i]) == -1)
 			{
 				count = -1;
 				break;
 			}
 			count++;
+			i++;
 			continue;
 		}
 
-		/* move past '%' */
-		i++;
+		/* '%' dispatch */
+		i++; /* look at the char after '%' */
 
+		/* lone '%' at end is an error (project expectation) */
 		if (format[i] == '\0')
 		{
 			count = -1;
 			break;
 		}
 
-		/* parse %[flags][width][.precision][length]spec and print */
+		/* literal percent: "%%" -> print single '%' */
+		if (format[i] == '%')
 		{
-			fmt_t f;
-
-			if (parse_format(format, &i, &f) < 0)
+			if (_putchar('%') == -1)
 			{
 				count = -1;
 				break;
 			}
+			count++;
+			i++;
+			continue;
+		}
 
-			k = print_formatted(&f, &ap);
-			if (k < 0)
+		/* step back so handle_spec sees the '%' */
+		i--;
+
+		{
+			int added = handle_spec(format, &i, &ap);
+
+			if (added == -1)
 			{
 				count = -1;
 				break;
 			}
-			count += k;
+			count += added;
 		}
 	}
 
 	va_end(ap);
-	_putchar_flush();
 	return (count);
 }
+

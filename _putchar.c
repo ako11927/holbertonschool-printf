@@ -1,15 +1,14 @@
 #include "main.h"
 #include <unistd.h>
 
-/* 1KB buffered writer for stdout */
-
+/* Buffered stdout writer (1024B) */
 static char buf[1024];
 static int idx;
 
 /**
- * _putchar - buffer a single char to stdout
+ * _putchar - buffer a single character to stdout
  * @c: character
- * Return: 1 on success, -1 on write error
+ * Return: 1 on success, -1 on error
  */
 int _putchar(char c)
 {
@@ -26,45 +25,42 @@ int _putchar(char c)
 }
 
 /**
- * _putchar_flush - flush pending buffered output
+ * _putchar_flush - write out any buffered data
  */
 void _putchar_flush(void)
 {
 	if (idx > 0)
 	{
-		/* ignore short writes here; project callers check return values */
 		(void)write(1, buf, idx);
 		idx = 0;
 	}
 }
 
 /**
- * putnchar - print a char repeated n times
- * @c: character to repeat
- * @n: times
- * Return: number printed or -1 on error
+ * putnchar - print a character repeated N times
+ * @c: character
+ * @n: repeat count
+ * Return: chars printed or -1 on error
  */
 int putnchar(char c, int n)
 {
-	int i, cnt = 0;
+	int i, out = 0;
 
 	for (i = 0; i < n; i++)
 	{
 		if (_putchar(c) == -1)
 			return (-1);
-		cnt++;
+		out++;
 	}
-	return (cnt);
+	return (out);
 }
 
 /**
- * print_char - write one character
+ * print_char - print one character
  * @c: character
  * Return: 1 on success, -1 on error
  */
 int print_char(char c)
 {
-	if (_putchar(c) == -1)
-		return (-1);
-	return (1);
+	return (_putchar(c) == -1 ? -1 : 1);
 }
