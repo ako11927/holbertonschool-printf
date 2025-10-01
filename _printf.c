@@ -42,5 +42,6 @@ int _printf(const char *format, ...)
 		count += k;
 	}
 	va_end(ap);
+	_putchar_flush();
 	return (count);
 }
