@@ -1,51 +1,65 @@
 #include "main.h"
 
-/* static 1KB buffer */
-static char buf[1024];
-static int idx;
-
 /**
- * _putchar - buffered putchar (stores and flushes in 1KB chunks)
- * @c: character to print
- *
+ * _putchar - buffered putchar
+ * @c: character
  * Return: 1 on success, -1 on error
  */
 int _putchar(char c)
 {
-	if (idx >= (int)sizeof(buf))
+	static char buf[1024];
+	static int idx;
+	int r = 1;
+
+	if (c == -1 || idx >= 1023)
 	{
-		if (write(1, buf, idx) != idx)
-		{
-			idx = 0;
+		r = write(1, buf, idx);
+		idx = 0;
+	}
+	if (c != -1)
+		buf[idx++] = c;
+	return (r == -1 ? -1 : 1);
+}
+
+/**
+ * _putchar_flush - flush the internal buffer
+ * Return: 1 (or -1 on error)
+ */
+int _putchar_flush(void)
+{
+	return (_putchar(-1));
+}
+
+/**
+ * print_char - print a single character (legacy helper)
+ * @ap: va_list*
+ * Return: chars written or -1
+ */
+int print_char(va_list *ap)
+{
+	char c = (char)va_arg(*ap, int);
+
+	return (_putchar(c) == -1 ? -1 : 1);
+}
+
+/**
+ * putnchar - write character @c exactly @n times
+ * @c: character to repeat
+ * @n: count
+ * Return: number written, or -1 on error
+ */
+int putnchar(char c, int n)
+{
+	int i, wrote = 0;
+
+	if (n <= 0)
+		return (0);
+
+	for (i = 0; i < n; i++)
+	{
+		if (_putchar(c) == -1)
 			return (-1);
-		}
-		idx = 0;
+		wrote++;
 	}
-	buf[idx++] = c;
-	return (1);
-}
-
-/**
- * _putchar_flush - Flush the internal write buffer.
- *
- * Return: 0 on success, or -1 on error.
- */
-void _putchar_flush(void)
-{
-	if (idx > 0)
-	{
-		(void)write(1, buf, idx);
-		idx = 0;
-	}
-}
-
-/**
- * print_char - wrapper over _putchar
- * @c: character to print
- *
- * Return: 1 on success, -1 on error
- */
-int print_char(char c)
-{
-	return (_putchar(c));
+	return (wrote);
 }

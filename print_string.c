@@ -1,22 +1,24 @@
 #include "main.h"
 
 /**
- * print_string - prints a C string
- * @s: string to print (prints "(null)" if NULL)
+ * print_string - prints a C string (NULL -> "(null)")
+ * @ap: pointer to va_list with the string argument
  *
- * Return: number of chars printed, or -1 on error
+ * Return: number of characters printed (or -1 on error)
  */
-int print_string(const char *s)
+int print_string(va_list *ap)
 {
-	int i, count = 0;
+	char *s = va_arg(*ap, char *);
+	int i = 0;
 
-	if (s == NULL)
+	if (!s)
 		s = "(null)";
-	for (i = 0; s[i] != '\0'; i++)
+
+	while (s[i] != '\0')
 	{
-		if (_putchar(s[i]) < 0)
+		if (_putchar(s[i]) == -1)
 			return (-1);
-		count++;
+		i++;
 	}
-	return (count);
+	return (i);
 }
