@@ -1,0 +1,41 @@
+.\" Manpage for _printf
+.TH _PRINTF 3 "October 2025" "Holberton School" "Library Functions Manual"
+.SH NAME
+_printf \- produce output according to a format
+.SH SYNOPSIS
+.B #include "main.h"
+.br
+.B int _printf(const char *format, ...);
+.SH DESCRIPTION
+The
+.B _printf()
+function produces output according to a format string
+and optional arguments.
+
+Supported format specifiers are:
+.TP
+%c
+Print a single character.
+.TP
+%s
+Print a string of characters.
+.TP
+%%
+Print a literal percent sign.
+.TP
+%d, %i
+Print a signed decimal integer.
+
+If an unsupported specifier is found, the function prints
+the percent sign followed by the specifier character.
+
+.SH RETURN VALUE
+Upon success, the number of characters printed is returned.
+If an output error is encountered, -1 is returned.
+
+.SH SEE ALSO
+printf(3)
+
+.SH AUTHORS
+Ghaida A. (GitHub: GhaidaAL36)
+Ahmed K. (GitHub: ako11927)
