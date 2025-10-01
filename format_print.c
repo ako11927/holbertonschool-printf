@@ -1,344 +1,287 @@
 #include "main.h"
+#include <stdarg.h>
+#include <string.h>
 
-/* repeat char */
-/**
- * putnchar - Write the same character multiple times.
- * @c: Character to print.
- * @n: Number of times to print @c.
- *
- * Return: Number of characters printed, or -1 on error.
- */
+/* public: declared in main.h */
 int putnchar(char c, int n)
 {
-	int k, r;
+	int k = 0;
 
-	for (k = 0; k < n; k++)
+	while (n-- > 0)
 	{
-		r = _putchar(c);
-		if (r < 0)
-			return (-1);
-	}
-	return (n);
-}
-
-/* utoa base 2..16 */
-/**
- * utoa_base - Convert an unsigned long to a base-2..16 null-terminated string.
- * @n: Value to convert.
- * @base: Base (2..16).
- * @upper: Non-zero to use uppercase digits.
- * @buf: Output buffer (large enough for 64-bit + '\0').
- *
- * Return: Length of the string written (excluding the '\0').
- */
-static int utoa_base(unsigned long n, int base, int upper, char *buf)
-{
-	const char *lo = "0123456789abcdef";
-	const char *up = "0123456789ABCDEF";
-	char tmp[65];
-	int len = 0;
-	int i;
-
-	if (n == 0)
-	{
-		buf[0] = '0';
-		buf[1] = '\0';
-		return (1);
-	}
-	while (n)
-	{
-		int v = (int)(n % (unsigned long)base);
-
-		tmp[len++] = upper ? up[v] : lo[v];
-		n /= (unsigned long)base;
-	}
-	for (i = 0; i < len; i++)
-		buf[i] = tmp[len - 1 - i];
-	buf[len] = '\0';
-	return (len);
-}
-
-/* ints: d i u o x X */
-/**
- * print_intlike - Print d, i, u, o, x, X according to parsed options.
- * @f: Parsed format options.
- * @ap: Pointer to the active va_list.
- *
- * Return: Characters printed, or -1 on error.
- *         If the specifier is not one of these, returns -2 (not handled here).
- */
-static int print_intlike(const fmt_t *f, va_list *ap)
-{
-	int base = 10, upper = 0, is_signed = 0;
-	unsigned long u = 0;
-	long s = 0;
-	int neg = 0, nlen, zeros = 0, pad = 0, left = f->f_minus;
-	int total = 0, use_zero_pad;
-	char num[65];
-	int signlen, altlen, need, r, k;
-
-	if (f->spec == 'd' || f->spec == 'i')
-	{
-		is_signed = 1;
-		base = 10;
-	}
-	else if (f->spec == 'u')
-		base = 10;
-	else if (f->spec == 'o')
-		base = 8;
-	else if (f->spec == 'x' || f->spec == 'X')
-	{
-		base = 16;
-		upper = (f->spec == 'X');
-	}
-	else
-		return (-2);
-
-	/* fetch with l/h */
-	if (is_signed)
-	{
-		if (f->length == 'l')
-			s = va_arg(*ap, long);
-		else if (f->length == 'h')
-			s = (short)va_arg(*ap, int);
-		else
-			s = va_arg(*ap, int);
-		if (s < 0)
-		{
-			neg = 1;
-			u = (unsigned long)(-s);
-		}
-		else
-			u = (unsigned long)s;
-	}
-	else
-	{
-		if (f->length == 'l')
-			u = va_arg(*ap, unsigned long);
-		else if (f->length == 'h')
-			u = (unsigned short)va_arg(*ap, unsigned int);
-		else
-			u = va_arg(*ap, unsigned int);
-	}
-
-	nlen = utoa_base(u, base, upper, num);
-
-	/* precision==0 and value==0 => no digits */
-	if (f->precision == 0 && u == 0)
-		nlen = 0;
-
-	if (f->precision > nlen)
-		zeros = f->precision - nlen;
-
-	use_zero_pad = (f->f_zero && !left && f->precision < 0);
-
-	/* compute padding/sign/prefix */
-	signlen = (is_signed && (neg || f->f_plus || f->f_space)) ? 1 : 0;
-	altlen = 0;
-	if (f->f_hash && u != 0 && (f->spec == 'x' || f->spec == 'X'))
-		altlen = 2;
-	if (f->f_hash && f->spec == 'o' && (u != 0 || f->precision == 0))
-	{
-		if (!(f->precision > nlen) && !(nlen > 0 && num[0] == '0'))
-			altlen = 1;
-	}
-	need = signlen + altlen + zeros + nlen;
-	if (f->width > need)
-		pad = f->width - need;
-
-	if (!left && !use_zero_pad && pad)
-	{
-		r = putnchar(' ', pad);
-		if (r < 0)
-			return (-1);
-		total += r;
-		pad = 0;
-	}
-
-	/* sign */
-	if (is_signed)
-	{
-		if (neg && _putchar('-') < 0)
-			return (-1);
-		if (!neg && f->f_plus && _putchar('+') < 0)
-			return (-1);
-		if (!neg && !f->f_plus && f->f_space && _putchar(' ') < 0)
-			return (-1);
-		if (neg || f->f_plus || f->f_space)
-			total++;
-	}
-
-	/* hex 0x/0X */
-	if (f->f_hash && u != 0 && (f->spec == 'x' || f->spec == 'X'))
-	{
-		if (_putchar('0') < 0)
-			return (-1);
-		if (_putchar(f->spec == 'x' ? 'x' : 'X') < 0)
-			return (-1);
-		total += 2;
-	}
-
-	/* octal leading 0 */
-	if (f->f_hash && f->spec == 'o' && (u != 0 || f->precision == 0))
-	{
-		if (!(f->precision > nlen) && !(nlen > 0 && num[0] == '0'))
-		{
-			if (_putchar('0') < 0)
-				return (-1);
-			total += 1;
-		}
-	}
-
-	/* zero pad from width (after sign/prefix) */
-	if (use_zero_pad && pad)
-	{
-		r = putnchar('0', pad);
-		if (r < 0)
-			return (-1);
-		total += r;
-		pad = 0;
-	}
-
-	/* zeros from precision */
-	if (zeros)
-	{
-		r = putnchar('0', zeros);
-		if (r < 0)
-			return (-1);
-		total += r;
-	}
-
-	/* digits */
-	for (k = 0; k < nlen; k++)
-	{
-		if (_putchar(num[k]) < 0)
-			return (-1);
-		total++;
-	}
-
-	/* left-justify spaces */
-	if (left && pad)
-	{
-		r = putnchar(' ', pad);
-		if (r < 0)
-			return (-1);
-		total += r;
-	}
-	return (total);
-}
-
-/* strings/chars/% with width + precision(for strings) */
-/**
- * print_strlike - Print s, c, and %% with width/precision handling.
- * @f: Parsed format options.
- * @ap: Pointer to the active va_list.
- *
- * Return: Characters printed, or -1 on error.
- *         If the specifier is not one of these, returns -2 (not handled here).
- */
-static int print_strlike(const fmt_t *f, va_list *ap)
-{
-	int total = 0, pad, len, outlen, left = f->f_minus;
-	const char *s;
-	char c;
-	int i, r;
-
-	if (f->spec == 's')
-	{
-		s = va_arg(*ap, const char *);
-		if (s == NULL)
-			s = "(null)";
-		len = 0;
-		while (s[len] != '\0')
-			len++;
-		outlen = (f->precision >= 0 && f->precision < len) ? f->precision : len;
-		pad = (f->width > outlen) ? (f->width - outlen) : 0;
-
-		if (!left && pad)
-		{
-			r = putnchar(' ', pad);
-			if (r < 0)
-				return (-1);
-			total += r;
-		}
-		for (i = 0; i < outlen; i++)
-		{
-			if (_putchar(s[i]) < 0)
-				return (-1);
-			total++;
-		}
-		if (left && pad)
-		{
-			r = putnchar(' ', pad);
-			if (r < 0)
-				return (-1);
-			total += r;
-		}
-		return (total);
-	}
-	else if (f->spec == 'c' || f->spec == '%')
-	{
-		c = (f->spec == '%') ? '%' : (char)va_arg(*ap, int);
-		pad = (f->width > 1) ? (f->width - 1) : 0;
-
-		if (!left && pad)
-		{
-			r = putnchar(' ', pad);
-			if (r < 0)
-				return (-1);
-			total += r;
-		}
 		if (_putchar(c) < 0)
 			return (-1);
-		total++;
-		if (left && pad)
-		{
-			r = putnchar(' ', pad);
-			if (r < 0)
-				return (-1);
-			total += r;
-		}
-		return (total);
+		k++;
 	}
-	return (-2);
+	return (k);
 }
 
-/* route one specifier */
+/* private helpers */
+static char *utoa_base(unsigned long v, char *buf, int base, int upper)
+{
+	static const char lo[] = "0123456789abcdef";
+	static const char up[] = "0123456789ABCDEF";
+	const char *digits = upper ? up : lo;
+	char *p = buf + 65;
+
+	*p = '\0';
+	if (v == 0)
+	{
+		*--p = '0';
+		return (p);
+	}
+	while (v)
+	{
+		*--p = digits[v % (unsigned)base];
+		v /= (unsigned)base;
+	}
+	return (p);
+}
+
+static int print_str_fmt(const char *s, const fmt_t *f)
+{
+	int n, pad, count = 0, i, k;
+
+	if (!s)
+		s = "(null)";
+
+	if (f->precision >= 0)
+	{
+		for (i = 0; s[i] && i < f->precision; i++)
+			;
+		n = i;
+	}
+	else
+		n = (int)strlen(s);
+
+	pad = (f->width > n) ? f->width - n : 0;
+
+	if (!f->f_minus)
+	{
+		k = putnchar(' ', pad);
+		if (k < 0)
+			return (-1);
+		count += k;
+	}
+	for (i = 0; i < n; i++)
+	{
+		if (_putchar(s[i]) < 0)
+			return (-1);
+		count++;
+	}
+	if (f->f_minus)
+	{
+		k = putnchar(' ', pad);
+		if (k < 0)
+			return (-1);
+		count += k;
+	}
+	return (count);
+}
+
+static int print_char_fmt(int c, const fmt_t *f)
+{
+	int pad = (f->width > 1) ? f->width - 1 : 0, count = 0, k;
+
+	if (!f->f_minus)
+	{
+		k = putnchar(' ', pad);
+		if (k < 0)
+			return (-1);
+		count += k;
+	}
+	if (_putchar((char)c) < 0)
+		return (-1);
+	count++;
+	if (f->f_minus)
+	{
+		k = putnchar(' ', pad);
+		if (k < 0)
+			return (-1);
+		count += k;
+	}
+	return (count);
+}
+
+static int print_intlike(long val, const fmt_t *f, int is_unsigned, int base, int upper)
+{
+	char buf[70], prefix[3];
+	unsigned long u;
+	char *digits;
+	int nlen, zeroes, pad, prelen = 0, count = 0;
+	int use_zero_pad, i, k;
+
+	use_zero_pad = (f->f_zero && !f->f_minus && f->precision < 0);
+
+	if (!is_unsigned && val < 0)
+	{
+		u = (unsigned long)(-val);
+		prefix[prelen++] = '-';
+	}
+	else
+	{
+		u = (unsigned long)val;
+		if (!is_unsigned)
+		{
+			if (f->f_plus)
+				prefix[prelen++] = '+';
+			else if (f->f_space)
+				prefix[prelen++] = ' ';
+		}
+	}
+
+	digits = utoa_base(u, buf, base, upper);
+	nlen = (f->precision == 0 && u == 0) ? 0 : (int)strlen(digits);
+
+	if (f->f_hash)
+	{
+		if (base == 8 && (u != 0 || f->precision == 0))
+			prefix[prelen++] = '0';
+		else if (base == 16 && u != 0)
+		{
+			prefix[prelen++] = '0';
+			prefix[prelen++] = upper ? 'X' : 'x';
+		}
+	}
+
+	zeroes = (f->precision > nlen) ? f->precision - nlen : 0;
+	pad = f->width - (prelen + zeroes + nlen);
+	if (pad < 0)
+		pad = 0;
+
+	/* left pad + prefix */
+	if (!f->f_minus)
+	{
+		if (use_zero_pad)
+		{
+			for (i = 0; i < prelen; i++)
+			{
+				if (_putchar(prefix[i]) < 0)
+					return (-1);
+				count++;
+			}
+			k = putnchar('0', pad);
+			if (k < 0)
+				return (-1);
+			count += k;
+		}
+		else
+		{
+			k = putnchar(' ', pad);
+			if (k < 0)
+				return (-1);
+			count += k;
+
+			for (i = 0; i < prelen; i++)
+			{
+				if (_putchar(prefix[i]) < 0)
+					return (-1);
+				count++;
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < prelen; i++)
+		{
+			if (_putchar(prefix[i]) < 0)
+				return (-1);
+			count++;
+		}
+	}
+
+	/* precision zeros */
+	k = putnchar('0', zeroes);
+	if (k < 0)
+		return (-1);
+	count += k;
+
+	/* digits */
+	for (i = 0; i < nlen; i++)
+	{
+		if (_putchar(digits[i]) < 0)
+			return (-1);
+		count++;
+	}
+
+	/* right pad */
+	if (f->f_minus)
+	{
+		k = putnchar(' ', pad);
+		if (k < 0)
+			return (-1);
+		count += k;
+	}
+	return (count);
+}
+
 /**
- * print_formatted - Route a single conversion to the proper printer.
- * @f: Parsed format options.
- * @ap: Pointer to the active va_list.
- *
- * Return: Characters printed, or -1 on error.
+ * print_formatted - dispatch one parsed conversion and print it
+ * @f: parsed format (flags/width/precision/length/spec)
+ * @ap: pointer to va_list (as declared in main.h)
+ * Return: chars printed or -1
  */
 int print_formatted(const fmt_t *f, va_list *ap)
 {
-	int r;
+	fmt_t tmp;
+	int up;
 
-	r = print_intlike(f, ap);
-	if (r != -2)
-		return (r);
+	tmp = *f;
 
-	r = print_strlike(f, ap);
-	if (r != -2)
-		return (r);
-
-	/* custom ones you already support */
-	if (f->spec == 'b')
-		return (print_base((unsigned long)va_arg(*ap, unsigned int), 2, 0));
-	if (f->spec == 'p')
-		return (print_pointer(va_arg(*ap, void *)));
-	if (f->spec == 'S')
-		return (print_S(va_arg(*ap, const char *)));
-	if (f->spec == 'r')
-		return (print_rev(va_arg(*ap, const char *)));
-	if (f->spec == 'R')
-		return (print_rot13(va_arg(*ap, const char *)));
-
-	/* unknown: print literally */
-	if (_putchar('%') < 0)
-		return (-1);
-	if (_putchar(f->spec) < 0)
-		return (-1);
-	return (2);
+	switch (f->spec)
+	{
+	case 'c':
+		return (print_char_fmt(va_arg(*ap, int), f));
+	case '%':
+		return (print_char_fmt('%', f));
+	case 's':
+		return (print_str_fmt(va_arg(*ap, char *), f));
+	case 'S':
+		return (print_S(va_arg(*ap, char *)));
+	case 'r':
+		return (print_rev(va_arg(*ap, char *)));
+	case 'R':
+		return (print_rot13(va_arg(*ap, char *)));
+	case 'p':
+	{
+		void *ptr = va_arg(*ap, void *);
+		if (!ptr)
+			return (print_str_fmt("(nil)", f));
+		tmp.f_hash = 1;
+		return (print_intlike((long)(unsigned long)ptr, &tmp, 1, 16, 0));
+	}
+	case 'b':
+		return (print_intlike((long)(unsigned)va_arg(*ap, unsigned int), f, 1, 2, 0));
+	case 'd':
+	case 'i':
+		if (f->length == 'l')
+			return (print_intlike(va_arg(*ap, long), f, 0, 10, 0));
+		else if (f->length == 'h')
+			return (print_intlike((long)(short)va_arg(*ap, int), f, 0, 10, 0));
+		return (print_intlike((long)va_arg(*ap, int), f, 0, 10, 0));
+	case 'u':
+		if (f->length == 'l')
+			return (print_intlike((long)va_arg(*ap, unsigned long), f, 1, 10, 0));
+		else if (f->length == 'h')
+			return (print_intlike((long)(unsigned short)va_arg(*ap, unsigned int), f, 1, 10, 0));
+		return (print_intlike((long)va_arg(*ap, unsigned int), f, 1, 10, 0));
+	case 'o':
+		if (f->length == 'l')
+			return (print_intlike((long)va_arg(*ap, unsigned long), f, 1, 8, 0));
+		else if (f->length == 'h')
+			return (print_intlike((long)(unsigned short)va_arg(*ap, unsigned int), f, 1, 8, 0));
+		return (print_intlike((long)va_arg(*ap, unsigned int), f, 1, 8, 0));
+	case 'x':
+	case 'X':
+		up = (f->spec == 'X');
+		if (f->length == 'l')
+			return (print_intlike((long)va_arg(*ap, unsigned long), f, 1, 16, up));
+		else if (f->length == 'h')
+			return (print_intlike((long)(unsigned short)va_arg(*ap, unsigned int), f, 1, 16, up));
+		return (print_intlike((long)va_arg(*ap, unsigned int), f, 1, 16, up));
+	default:
+		if (_putchar('%') < 0 || _putchar(f->spec) < 0)
+			return (-1);
+		return (2);
+	}
 }
