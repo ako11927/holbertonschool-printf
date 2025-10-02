@@ -1,22 +1,40 @@
 #include "main.h"
 
-int print_int(int n)
+/**
+ * print_int - prints a signed integer
+ * @n: number to print
+ *
+ * Description: prints a signed decimal number using recursion.
+ * Handles negatives including INT_MIN safely.
+ *
+ * Return: number of chars printed, or -1 on error
+ */
+int print_int(long n)
 {
-    unsigned int u;
-    int k = 0;
+	int count = 0;
+	unsigned long u;
 
-    if (n < 0) {
-        if (_putchar('-') == -1) return -1;
-        k++;
-        /* careful with INT_MIN: cast before negating */
-        u = (unsigned int)(-(long)n);
-    } else {
-        u = (unsigned int)n;
-    }
-    {
-        int t = print_base((unsigned long)u, 10, 0);
-        if (t == -1) return -1;
-        k += t;
-    }
-    return k;
+	if (n < 0)
+	{
+		if (_putchar('-') < 0)
+			return (-1);
+		count++;
+		u = (unsigned long)(-n);
+	}
+	else
+	{
+		u = (unsigned long)n;
+	}
+
+	if (u / 10)
+	{
+		int k = print_int((long)(u / 10));
+
+		if (k < 0)
+			return (-1);
+		count += k;
+	}
+	if (_putchar((char)('0' + (u % 10))) < 0)
+		return (-1);
+	return (count + 1);
 }
