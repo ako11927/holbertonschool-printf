@@ -20,25 +20,16 @@ int _printf(const char *format, ...)
 		if (format[i] != '%')
 		{
 			if (_putchar(format[i]) < 0)
-			{
-				count = -1;
-				break;
-			}
+			{ count = -1; break; }
 			count++;
 			continue;
 		}
 		i++;
 		if (format[i] == '\0')
-		{
-			count = -1;
-			break;
-		}
+		{ count = -1; break; }
 		k = handle_spec(format[i], &ap);
 		if (k < 0)
-		{
-			count = -1;
-			break;
-		}
+		{ count = -1; break; }
 		count += k;
 	}
 	va_end(ap);
