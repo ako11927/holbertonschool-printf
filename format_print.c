@@ -5,7 +5,7 @@
 static int padn(char c, int n) { return (n > 0 ? putnchar(c, n) : 0); }
 
 /* convert unsigned long to base string, returns length (no '\0') */
-static int utoa_base(unsigned long v, int base, int upper, char *out)
+static int __attribute__((unused)) utoa_base(unsigned long v, int base, int upper, char *out)
 {
 	char tmp[64];
 	const char *digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
@@ -75,7 +75,7 @@ int print_intlike(const fmt_t *f_in, va_list *ap)
 {
 	fmt_t f = *f_in; /* work on a copy so we can normalize */
 	unsigned long uval = 0;
-	int is_signed = 0, base = 10, upper = 0, is_ptr = 0;
+	int base = 10, upper = 0, is_ptr = 0;
 	int prelen = 0, nd = 0, k, out = 0;
 	char sign = 0, prefix[2] = {0, 0}, digits[64];
 	int prec_zeros = 0, left_spaces = 0, zero_pad = 0, right_spaces = 0;
@@ -97,7 +97,7 @@ int print_intlike(const fmt_t *f_in, va_list *ap)
 	switch (f.spec)
 	{
 	case 'd': case 'i':
-		is_signed = 1;
+
 		if (f.length == 2)      /* 'l' */
 		{
 			long v = va_arg(*ap, long);

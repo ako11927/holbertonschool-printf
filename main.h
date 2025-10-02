@@ -1,40 +1,44 @@
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef PRINTF_MAIN_H
+#define PRINTF_MAIN_H
 
 #include <stdarg.h>
-
-/* buffered I/O */
-int _putchar(char c);
-void _putchar_flush(void);
-int putnchar(char c, int n);
-
-/* simple printers used by the dispatcher */
-int print_char(char c);
-int print_string(const char *s);
-int print_int(int n);
-int print_uint(unsigned int n);
-int print_base(unsigned long n, int base, int uppercase);
-int print_pointer(const void *p);
-int print_rev(const char *s);
-int print_rot13(const char *s);
-int print_S(const char *s);
-
-/* parsed format fields */
-typedef struct fmt_s
-{
-	int f_plus, f_space, f_hash, f_minus, f_zero;
-	int width;          /* negative means: was read as negative then normalized */
-	int precision;      /* -1 => unspecified */
-	int length;         /* 0, 'h'==1, 'l'==2 */
-	char spec;          /* conversion specifier */
-} fmt_t;
-
-/* parser + dispatcher */
-int parse_format(const char *fmt, int *i, fmt_t *out);
-int print_formatted(const fmt_t *f, va_list *ap);
-int handle_spec(const char *fmt, int *i, va_list *ap);
+#include <stddef.h>
 
 /* public entry */
 int _printf(const char *format, ...);
 
-#endif /* MAIN_H */
+/* buffered output */
+int  _putchar(char c);
+void _putchar_flush(void);
+int  putnchar(char c, int n);
+
+/* Format descriptor */
+typedef struct fmt_s {
+    int  f_plus;     /* +  */
+    int  f_space;    /* ' ' */
+    int  f_hash;     /* #  */
+    int  f_zero;     /* 0  */
+    int  f_minus;    /* -  */
+    int  width;      /* -1 => not set */
+    int  precision;  /* -1 => not set */
+    int  length;     /* 0 none, 1 h, 2 l */
+    char spec;       /* conversion specifier */
+} fmt_t;
+
+/* core across files */
+int parse_format(const char *fmt, int *i, fmt_t *out);
+int print_formatted(const fmt_t *f, va_list *ap);
+int handle_spec(const char *fmt, int *i, va_list *ap);
+
+/* helpers / basic printers required by checker */
+size_t strnlen_prec(const char *s, int prec);
+int print_base(unsigned long n, int base, int uppercase);
+int print_int(int n);
+int print_uint(unsigned int n);
+int print_pointer(const void *p);
+int print_string(const char *s);
+int print_S(const char *s);
+int print_rev(const char *s);
+int print_rot13(const char *s);
+
+#endif /* PRINTF_MAIN_H */

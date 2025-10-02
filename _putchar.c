@@ -1,21 +1,22 @@
 #include "main.h"
 #include <unistd.h>
 
-/* Buffered stdout writer (1024B) */
-static char buf[1024];
+#define BUF_SIZE 1024
+
+static char buf[BUF_SIZE];
 static int idx;
 
 /**
- * _putchar - buffer a single character to stdout
+ * _putchar - buffered putchar to stdout
  * @c: character
- * Return: 1 on success, -1 on error
+ * Return: 1 on success, -1 on write failure
  */
 int _putchar(char c)
 {
-	if (idx >= (int)sizeof(buf))
-	{
-		ssize_t r = write(1, buf, idx);
+	ssize_t r;
 
+	if (idx >= BUF_SIZE) {
+		r = write(1, buf, idx);
 		if (r != idx)
 			return (-1);
 		idx = 0;
@@ -25,42 +26,28 @@ int _putchar(char c)
 }
 
 /**
- * _putchar_flush - write out any buffered data
+ * _putchar_flush - flush internal buffer
  */
 void _putchar_flush(void)
 {
-	if (idx > 0)
-	{
+	if (idx > 0) {
 		(void)write(1, buf, idx);
 		idx = 0;
 	}
 }
 
 /**
- * putnchar - print a character repeated N times
- * @c: character
- * @n: repeat count
- * Return: chars printed or -1 on error
+ * putnchar - print the same char n times
+ * @c: char
+ * @n: count (<= 0 prints nothing)
+ * Return: written count or -1 on error
  */
 int putnchar(char c, int n)
 {
-	int i, out = 0;
+	int i;
 
 	for (i = 0; i < n; i++)
-	{
 		if (_putchar(c) == -1)
 			return (-1);
-		out++;
-	}
-	return (out);
-}
-
-/**
- * print_char - print one character
- * @c: character
- * Return: 1 on success, -1 on error
- */
-int print_char(char c)
-{
-	return (_putchar(c) == -1 ? -1 : 1);
+	return (n < 0 ? 0 : n);
 }

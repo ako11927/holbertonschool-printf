@@ -1,32 +1,34 @@
 #include "main.h"
 
 /**
- * print_base - prints unsigned in given base (2..16)
- * @n: number (unsigned long to support pointers too)
- * @base: 2, 8, 10, 16
- * @uppercase: 0 for lower, 1 for upper hex letters
- *
- * Return: chars printed or -1 on error
+ * print_base - print unsigned long in base (2..16)
+ * @n: number
+ * @base: base
+ * @uppercase: non-zero => A..F, else a..f
+ * Return: chars printed or -1
  */
 int print_base(unsigned long n, int base, int uppercase)
 {
-	int count = 0;
-	char c;
+	char stack[64];
+	const char *d = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
+	int top = 0, out = 0;
 
-	if (n / (unsigned long)base)
-	{
-		int k = print_base(n / (unsigned long)base, base, uppercase);
+	if (base < 2 || base > 16)
+		return (0);
 
-		if (k < 0)
-			return (-1);
-		count += k;
+	if (n == 0)
+		stack[top++] = '0';
+	else {
+		while (n) {
+			stack[top++] = d[n % (unsigned)base];
+			n /= (unsigned)base;
+		}
 	}
-	c = (char)(n % (unsigned long)base);
-	if (c < 10)
-		c = (char)('0' + c);
-	else
-		c = (char)((uppercase ? 'A' : 'a') + (c - 10));
-	if (_putchar(c) < 0)
-		return (-1);
-	return (count + 1);
+
+	while (top) {
+		if (_putchar(stack[--top]) == -1)
+			return (-1);
+		out++;
+	}
+	return (out);
 }
