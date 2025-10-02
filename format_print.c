@@ -153,30 +153,50 @@ int print_intlike(const fmt_t *f_in, va_list *ap)
 	}
 
 	/* convert to reversed digits */
-	if (uval == 0) digits[nd++] = '0';
-	else {
+	if (uval == 0)
+		digits[nd++] = '0';
+	else
+	{
 		const char *alpha = upper ? "0123456789ABCDEF" : "0123456789abcdef";
-		while (uval) { digits[nd++] = alpha[uval % (unsigned)base]; uval /= (unsigned)base; }
+		while (uval)
+		{
+			digits[nd++] = alpha[uval % (unsigned)base];
+			uval /= (unsigned)base;
+		}
 	}
 
 	/* precision & width */
 	width = f.width;
 	prec  = f.precision;
 
-	if (prec != -1 && prec > nd) prec_zeros = prec - nd;
-	if (prec == 0 && nd == 1 && digits[0] == '0') nd = 0; /* zero with .0 prints nothing (except %#o handled by prefix rule above) */
+	if (prec != -1 && prec > nd)
+		prec_zeros = prec - nd;
+
+	/* zero value with .0 => print nothing, EXCEPT %#.0o must print one '0' */
+	if (prec == 0 && nd == 1 && digits[0] == '0')
+	{
+		if (base == 8 && f.f_hash)
+		{
+			/* keep single '0' (nd stays 1) */
+		}
+		else
+		{
+			nd = 0;
+		}
+	}
 
 	/* padding decision */
 	if (!f.f_minus)
 	{
+		int core = nd + prec_zeros + prelen + (sign ? 1 : 0);
 		if (f.f_zero && prec == -1)
 		{
-			zero_pad = width - (nd + prec_zeros + prelen + (sign ? 1 : 0));
+			zero_pad = width - core;
 			if (zero_pad < 0) zero_pad = 0;
 		}
 		else
 		{
-			left_spaces = width - (nd + prec_zeros + prelen + (sign ? 1 : 0));
+			left_spaces = width - core;
 			if (left_spaces < 0) left_spaces = 0;
 		}
 	}
