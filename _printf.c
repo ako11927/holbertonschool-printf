@@ -37,10 +37,10 @@ int _printf(const char *format, ...)
 			return (-1);
 		}
 		count += added;
-		/* IMPORTANT: do NOT print format[i] here.
-		 * handle_spec advanced i to the spec and already printed output. */
 	}
 
+	/* flush buffered output so the checker sees it */
+	_putchar_flush();
 	va_end(ap);
 	return (count);
 }

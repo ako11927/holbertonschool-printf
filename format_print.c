@@ -207,7 +207,7 @@ int print_intlike(const fmt_t *f_in, va_list *ap)
 		return (-1);
 	}
 
-	/* prefix handling (#) — for hex when value!=0; for octal always via rules below */
+	/* prefix handling (#) — for hex when value!=0; for octal handled with precision rules */
 	if (f.f_hash && uval != 0)
 	{
 		if (base == 16)
@@ -244,11 +244,11 @@ int print_intlike(const fmt_t *f_in, va_list *ap)
 	/* special-case: precision==0 and value==0 */
 	if (prec == 0 && nd == 1 && digits[0] == '0')
 	{
-		/* For octal with '#', we must print a single '0' */
+		/* For octal with '#', must print a single '0' */
 		if (!(base == 8 && f.f_hash))
 		{
-			nd = 0; /* print nothing otherwise */
-			/* also cancel octal prefix if it was set only by '#' with zero value */
+			nd = 0; /* print nothing */
+			/* cancel octal prefix if it was only from '#' with zero value */
 			if (base == 8 && prelen == 1 && prefix[0] == '0')
 				prelen = 0;
 		}
