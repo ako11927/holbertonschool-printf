@@ -1,2 +1,7 @@
+# build artifacts
 *.o
 a.out
+tprintf
+
+# local tests
+__t.c
