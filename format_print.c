@@ -1,11 +1,10 @@
 #include "main.h"
 
-/* ---------- helpers (static) ---------- */
-
+/* local helpers */
 static int padn(char c, int n)
 {
-	int out = 0;
-	while (n-- > 0)
+	int i, out = 0;
+	for (i = 0; i < n; i++)
 	{
 		if (_putchar(c) == -1)
 			return (-1);
@@ -14,218 +13,244 @@ static int padn(char c, int n)
 	return (out);
 }
 
-/* ---------- string formatter ---------- */
-
-int print_str_fmt(const fmt_t *f, va_list *ap)
+/* string with width / precision / '-' */
+static int print_str_fmt(const fmt_t *f, va_list *ap)
 {
-	char *s = va_arg(*ap, char *);
-	int want = f->precision; /* -1 => unlimited */
-	int i, slen = 0, pad = 0, out = 0, k;
+	const char *s = va_arg(*ap, char *);
+	int n, pad, k, out;
 
-	if (s == (char *)0)
-		s = "(null)";
+	if (!s) s = "(null)";
+	n = (f->precision >= 0) ? (int)strnlen_prec(s, f->precision) : 0;
+	if (f->precision < 0)
+	{
+		const char *t = s;
+		n = 0;
+		while (*t++) n++;
+	}
 
-	for (i = 0; s[i] && (want < 0 || i < want); i++)
-		; /* measure with precision cap */
-	slen = i;
-
-	if (f->width > slen)
-		pad = f->width - slen;
+	pad = (f->width > n) ? f->width - n : 0;
+	out = 0;
 
 	if (!f->f_minus && pad)
 	{
 		k = padn(' ', pad);
-		if (k == -1)
-			return (-1);
+		if (k == -1) return (-1);
 		out += k;
 	}
-	for (i = 0; i < slen; i++)
+
+	k = 0;
+	while (k < n)
 	{
-		if (_putchar(s[i]) == -1)
-			return (-1);
+		if (_putchar(s[k]) == -1) return (-1);
 		out++;
+		k++;
 	}
+
 	if (f->f_minus && pad)
 	{
 		k = padn(' ', pad);
-		if (k == -1)
-			return (-1);
+		if (k == -1) return (-1);
 		out += k;
 	}
 	return (out);
 }
 
-/* -------- integer / unsigned / o / x / X / b / p formatter -------- */
-
-int print_intlike(const fmt_t *f_in, va_list *ap)
+/* full integer/uint/o/x/X/b/p engine with flags/width/precision/len */
+static int print_intlike(const fmt_t *f_in, va_list *ap)
 {
-	fmt_t f = *f_in; /* normalize a working copy */
-	unsigned long uval = 0;
-	int base = 10, upper = 0, is_ptr = 0;
-	int prelen = 0, nd = 0, k = 0, out = 0;
-	char sign = 0, prefix[2] = {0, 0}, digits[64];
-	int prec_zeros = 0, left_spaces = 0, zero_pad = 0, right_spaces = 0;
-	int width, prec;
+	fmt_t f = *f_in;
+	int width, prec, base, uppercase;
+	unsigned long uval;
+	long sval;
+	int neg, is_ptr;
+	char tmp[64];
+	int nlen, prelen, pad, out, k;
+	char signch;
+	char prefix[3];
+	int use_prefix;
 
-	/* normalize negative width/precision from '*' */
 	if (f.width < 0) { f.f_minus = 1; f.width = -f.width; }
 	if (f.precision < 0) f.precision = -1;
 
-	/* select type/value */
-	switch (f.spec)
+
+	is_ptr = 0;
+	base = 10;
+	uppercase = 0;
+	signch = 0;
+	use_prefix = 0;
+	prefix[0] = prefix[1] = prefix[2] = 0;
+
+	if (f.spec == 'd' || f.spec == 'i')
 	{
-	case 'd': case 'i':
-		if (f.length == 2) /* l */
-		{
-			long v = va_arg(*ap, long);
-			if (v < 0) { sign = '-'; uval = (unsigned long)(-v); }
-			else { if (f.f_plus) sign = '+'; else if (f.f_space) sign = ' '; uval = (unsigned long)v; }
-		}
-		else if (f.length == 1) /* h */
-		{
-			int v = va_arg(*ap, int);
-			short sv = (short)v;
-			if (sv < 0) { sign = '-'; uval = (unsigned long)(-sv); }
-			else { if (f.f_plus) sign = '+'; else if (f.f_space) sign = ' '; uval = (unsigned long)sv; }
-		}
+
+		if (f.length == 2)
+			sval = va_arg(*ap, long);
+		else if (f.length == 1)
+			sval = (short)va_arg(*ap, int);
 		else
-		{
-			int v = va_arg(*ap, int);
-			if (v < 0) { sign = '-'; uval = (unsigned long)(-v); }
-			else { if (f.f_plus) sign = '+'; else if (f.f_space) sign = ' '; uval = (unsigned long)v; }
-		}
+			sval = va_arg(*ap, int);
+
+		neg = (sval < 0);
+		uval = (unsigned long)(neg ? -sval : sval);
+		if (neg) signch = '-';
+		else if (f.f_plus) signch = '+';
+		else if (f.f_space) signch = ' ';
 		base = 10;
-		break;
+	}
+	else if (f.spec == 'u' || f.spec == 'o' ||
+	         f.spec == 'x' || f.spec == 'X' || f.spec == 'b')
+	{
 
-	case 'u':
-		if (f.length == 2) uval = va_arg(*ap, unsigned long);
-		else if (f.length == 1) { unsigned int t = va_arg(*ap, unsigned int); uval = (unsigned long)((unsigned short)t); }
-		else uval = (unsigned long)va_arg(*ap, unsigned int);
-		base = 10;
-		break;
+		if (f.length == 2)
+			uval = va_arg(*ap, unsigned long);
+		else if (f.length == 1)
+			uval = (unsigned long)((unsigned short)
+				va_arg(*ap, unsigned int));
+		else
+			uval = (unsigned long)va_arg(*ap, unsigned int);
 
-	case 'o':
-		if (f.length == 2) uval = va_arg(*ap, unsigned long);
-		else if (f.length == 1) { unsigned int t = va_arg(*ap, unsigned int); uval = (unsigned long)((unsigned short)t); }
-		else uval = (unsigned long)va_arg(*ap, unsigned int);
-		base = 8;
-		break;
+		if (f.spec == 'o') base = 8;
+		else if (f.spec == 'x' || f.spec == 'X') base = 16;
+		else if (f.spec == 'b') base = 2;
+		if (f.spec == 'X') uppercase = 1;
+	}
+	else if (f.spec == 'p')
+	{
 
-	case 'x':
-		upper = 0;
-		if (f.length == 2) uval = va_arg(*ap, unsigned long);
-		else if (f.length == 1) { unsigned int t = va_arg(*ap, unsigned int); uval = (unsigned long)((unsigned short)t); }
-		else uval = (unsigned long)va_arg(*ap, unsigned int);
+		is_ptr = 1;
+		uval = (unsigned long)(unsigned long)va_arg(*ap, void *);
 		base = 16;
-		break;
-
-	case 'X':
-		upper = 1;
-		if (f.length == 2) uval = va_arg(*ap, unsigned long);
-		else if (f.length == 1) { unsigned int t = va_arg(*ap, unsigned int); uval = (unsigned long)((unsigned short)t); }
-		else uval = (unsigned long)va_arg(*ap, unsigned int);
-		base = 16;
-		break;
-
-	case 'b':
-		base = 2;
-		uval = (unsigned long)va_arg(*ap, unsigned int);
-		break;
-
-	case 'p':
-		base = 16; upper = 0; is_ptr = 1;
-		uval = (unsigned long)va_arg(*ap, void *);
-		break;
-
-	default:
-		return (-1);
+	}
+	else
+	{
+		return (0);
 	}
 
-	/* prefixes */
+	nlen = 0;
+	if (uval == 0)
+	{
+		tmp[nlen++] = '0';
+	}
+	else
+	{
+		unsigned long v = uval;
+		while (v && nlen < (int)(sizeof(tmp)))
+		{
+			unsigned int d = (unsigned int)(v % (unsigned long)base);
+			if (d < 10) tmp[nlen++] = (char)('0' + d);
+			else tmp[nlen++] =
+				(char)((uppercase ? 'A' : 'a') + (d - 10));
+			v /= (unsigned long)base;
+		}
+	}
+
+	if (f.precision == 0 && uval == 0)
+		nlen = 0;
+
+	prelen = (f.precision > nlen) ? f.precision - nlen : 0;
+
 	if (is_ptr)
 	{
-		prefix[0] = '0'; prefix[1] = 'x'; prelen = 2;
+		prefix[0] = '0'; prefix[1] = 'x';
+		use_prefix = 1;
 	}
 	else if (f.f_hash && uval != 0)
 	{
-		if (base == 8) { prefix[0] = '0'; prelen = 1; }
-		else if (base == 16) { prefix[0] = '0'; prefix[1] = (upper ? 'X' : 'x'); prelen = 2; }
-	}
-
-	/* convert to reversed digits */
-	if (uval == 0)
-		digits[nd++] = '0';
-	else
-	{
-		const char *alpha = upper ? "0123456789ABCDEF" : "0123456789abcdef";
-		while (uval)
+		if (base == 8) { prefix[0] = '0'; use_prefix = 1; }
+		else if (base == 16)
 		{
-			digits[nd++] = alpha[uval % (unsigned)base];
-			uval /= (unsigned)base;
+			prefix[0] = '0'; prefix[1] = (uppercase ? 'X' : 'x');
+			use_prefix = 1;
+		}
+		else if (base == 2)
+		{
+			prefix[0] = '0'; prefix[1] = (uppercase ? 'B' : 'b');
+			use_prefix = 1;
 		}
 	}
 
-	/* precision & width */
 	width = f.width;
 	prec  = f.precision;
 
-	if (prec != -1 && prec > nd)
-		prec_zeros = prec - nd;
-
-	/* zero value with .0 => print nothing, EXCEPT %#.0o must print one '0' */
-	if (prec == 0 && nd == 1 && digits[0] == '0')
+	if (f.f_zero && !f.f_minus && prec == -1)
 	{
-		if (base == 8 && f.f_hash)
-		{
-			/* keep single '0' (nd stays 1) */
-		}
-		else
-		{
-			nd = 0;
-		}
+		prec = nlen + prelen;
+		if (signch) prec++;
+		if (use_prefix) prec += (prefix[1] ? 2 : 1);
+		if (prec < width) prec = width;
 	}
 
-	/* padding decision */
+	pad = 0;
+	out = 0;
+
 	if (!f.f_minus)
 	{
-		int core = nd + prec_zeros + prelen + (sign ? 1 : 0);
-		if (f.f_zero && prec == -1)
+		int need = 0;
+		need = nlen + prelen;
+		if (signch) need++;
+		if (use_prefix) need += (prefix[1] ? 2 : 1);
+		if (width > need) pad = width - need;
+		if (pad)
 		{
-			zero_pad = width - core;
-			if (zero_pad < 0) zero_pad = 0;
+			k = padn(' ', pad);
+			if (k == -1) return (-1);
+			out += k;
 		}
-		else
-		{
-			left_spaces = width - core;
-			if (left_spaces < 0) left_spaces = 0;
-		}
-	}
-	else
-	{
-		right_spaces = width - (nd + prec_zeros + prelen + (sign ? 1 : 0));
-		if (right_spaces < 0) right_spaces = 0;
 	}
 
-	/* emit, in order */
-	if (left_spaces) { k = padn(' ', left_spaces); if (k == -1) return (-1); out += k; }
-	if (sign)        { if (_putchar(sign) == -1) return (-1); out++; }
-	if (prelen >= 1) { if (_putchar(prefix[0]) == -1) return (-1); out++; }
-	if (prelen == 2) { if (_putchar(prefix[1]) == -1) return (-1); out++; }
-	if (zero_pad)    { k = padn('0', zero_pad); if (k == -1) return (-1); out += k; }
-	if (prec_zeros)  { k = padn('0', prec_zeros); if (k == -1) return (-1); out += k; }
-	while (nd > 0)   { if (_putchar(digits[--nd]) == -1) return (-1); out++; }
-	if (right_spaces){ k = padn(' ', right_spaces); if (k == -1) return (-1); out += k; }
+	if (signch)
+	{
+		if (_putchar(signch) == -1) return (-1);
+		out++;
+	}
+
+	if (use_prefix)
+	{
+		if (_putchar(prefix[0]) == -1) return (-1);
+		out++;
+		if (prefix[1])
+		{
+			if (_putchar(prefix[1]) == -1) return (-1);
+			out++;
+		}
+	}
+
+	if (prec > nlen)
+	{
+		k = padn('0', prec - nlen);
+		if (k == -1) return (-1);
+		out += k;
+	}
+
+	while (nlen > 0)
+	{
+		if (_putchar(tmp[--nlen]) == -1) return (-1);
+		out++;
+	}
+
+	if (f.f_minus && width > out)
+	{
+		int used = out;
+		while (used < width)
+		{
+			if (_putchar(' ') == -1) return (-1);
+			out++;
+			used++;
+		}
+	}
 
 	return (out);
 }
 
-/* ---------- master dispatcher ---------- */
-
+/*
+ * print_formatted - central dispatcher for one parsed fmt_t
+ * Returns printed chars or -1 on write error.
+ */
 int print_formatted(const fmt_t *f_in, va_list *ap)
 {
 	fmt_t f = *f_in;
+	int pad, k, out, ch;
 
-	/* normalize negative width/precision from '*' here too */
 	if (f.width < 0) { f.f_minus = 1; f.width = -f.width; }
 	if (f.precision < 0) f.precision = -1;
 
@@ -234,36 +259,69 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 
 	if (f.spec == 'c')
 	{
-		char ch = (char)va_arg(*ap, int);
-		int pad = (f.width > 1) ? f.width - 1 : 0, k, out = 0;
-
-		if (!f.f_minus && pad) { k = padn(' ', pad); if (k == -1) return (-1); out += k; }
-		if (_putchar(ch) == -1) return (-1);
+		out = 0;
+		pad = (f.width > 1) ? f.width - 1 : 0;
+		if (!f.f_minus && pad)
+		{
+			k = padn(' ', pad);
+			if (k == -1) return (-1);
+			out += k;
+		}
+		ch = va_arg(*ap, int);
+		if (_putchar((char)ch) == -1) return (-1);
 		out++;
-		if (f.f_minus && pad) { k = padn(' ', pad); if (k == -1) return (-1); out += k; }
+		if (f.f_minus && pad)
+		{
+			k = padn(' ', pad);
+			if (k == -1) return (-1);
+			out += k;
+		}
 		return (out);
 	}
 
 	if (f.spec == '%')
 	{
-		int pad = (f.width > 1) ? f.width - 1 : 0, k, out = 0;
-		char padc = (!f.f_minus && f.f_zero) ? '0' : ' ';
-		if (!f.f_minus && pad) { k = padn(padc, pad); if (k == -1) return (-1); out += k; }
+		out = 0;
+		pad = (f.width > 1) ? f.width - 1 : 0;
+		if (!f.f_minus && pad)
+		{
+			char pc = (f.f_zero ? '0' : ' ');
+			k = padn(pc, pad);
+			if (k == -1) return (-1);
+			out += k;
+		}
 		if (_putchar('%') == -1) return (-1);
 		out++;
-		if (f.f_minus && pad) { k = padn(' ', pad); if (k == -1) return (-1); out += k; }
+		if (f.f_minus && pad)
+		{
+			k = padn(' ', pad);
+			if (k == -1) return (-1);
+			out += k;
+		}
 		return (out);
 	}
 
-	if (f.spec=='d'||f.spec=='i'||f.spec=='u'||f.spec=='o'||f.spec=='x'||f.spec=='X'||f.spec=='b'||f.spec=='p')
+	if (f.spec == 'd' || f.spec == 'i' || f.spec == 'u' ||
+	    f.spec == 'o' || f.spec == 'x' || f.spec == 'X' ||
+	    f.spec == 'b' || f.spec == 'p')
 		return (print_intlike(&f, ap));
 
-	if (f.spec == 'S') { char *s = va_arg(*ap, char *); return (print_S(s ? s : "(null)")); }
-	if (f.spec == 'r') { char *s = va_arg(*ap, char *); return (print_rev(s ? s : "(null)")); }
-	if (f.spec == 'R') { char *s = va_arg(*ap, char *); return (print_rot13(s ? s : "(null)")); }
+	if (f.spec == 'S')
+	{
+		const char *s = va_arg(*ap, char *);
+		return (print_S(s ? s : "(null)"));
+	}
+	if (f.spec == 'r')
+	{
+		const char *s2 = va_arg(*ap, char *);
+		return (print_rev(s2 ? s2 : "(null)"));
+	}
+	if (f.spec == 'R')
+	{
+		const char *s3 = va_arg(*ap, char *);
+		return (print_rot13(s3 ? s3 : "(null)"));
+	}
 
-	/* unknown: print literally "%<spec>" */
-	if (_putchar('%') == -1) return (-1);
 	if (_putchar(f.spec) == -1) return (-1);
-	return (2);
+	return (1);
 }

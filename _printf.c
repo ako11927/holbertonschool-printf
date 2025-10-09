@@ -1,46 +1,47 @@
 #include "main.h"
 
 /**
- * _printf - produces output according to a format
+ * _printf - minimal printf clone for the project
  * @format: format string
- *
- * Return: number of characters printed, or -1 on error
+ * Return: number of characters written, or -1 on error
  */
 int _printf(const char *format, ...)
 {
 	va_list ap;
-	int i, count = 0, k;
+	int out = 0, i = 0;
 
-	if (format == NULL)
+	if (!format)
 		return (-1);
 
 	va_start(ap, format);
-	for (i = 0; format[i] != '\0'; i++)
+
+	while (format[i])
 	{
 		if (format[i] != '%')
 		{
-			if (_putchar(format[i]) < 0)
-			{
-				count = -1;
-				break;
-			}
-			count++;
+			if (_putchar(format[i]) == -1) { va_end(ap); return (-1); }
+			out++;
+			i++;
 			continue;
 		}
-		i++;
-		if (format[i] == '\0')
+
+		/* "%%" fast path */
+		if (format[i + 1] == '%')
 		{
-			count = -1;
-			break;
+			if (_putchar('%') == -1) { va_end(ap); return (-1); }
+			out++;
+			i += 2;
+			continue;
 		}
-		k = handle_spec(format[i], &ap);
-		if (k < 0)
+
+		/* Delegate: parse/print starting at '%', advance i inside */
 		{
-			count = -1;
-			break;
+			int added = handle_spec(format, &i, &ap);
+			if (added < 0) { va_end(ap); return (-1); }
+			out += added;
 		}
-		count += k;
 	}
+
 	va_end(ap);
-	return (count);
+	return (out);
 }

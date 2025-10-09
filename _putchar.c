@@ -1,27 +1,51 @@
 #include "main.h"
+#include <unistd.h>
+
+#define BUF_SZ 1024
+static char buf[BUF_SZ];
+static int  idx;
 
 /**
- * _putchar - writes a character to stdout
- * @c: character to print
- *
- * Return: 1 on success, -1 on error (errno set)
+ * _putchar - buffered write of a single char
+ * Return: 1 on success, -1 on error
  */
 int _putchar(char c)
 {
-	int r = write(1, &c, 1);
-
-	if (r == 1)
-		return (1);
-	return (-1);
+	buf[idx++] = c;
+	if (idx == BUF_SZ)
+	{
+		if (write(1, buf, idx) != idx)
+			return (-1);
+		idx = 0;
+	}
+	return (1);
 }
 
 /**
- * print_char - wrapper over _putchar
- * @c: character to print
- *
- * Return: number of chars printed or -1 on error
+ * _putchar_flush - flush buffered output
  */
-int print_char(char c)
+void _putchar_flush(void)
 {
-	return (_putchar(c));
+	if (idx > 0)
+	{
+		(void)write(1, buf, idx);
+		idx = 0;
+	}
+}
+
+/**
+ * putnchar - print character c, n times
+ * Return: number written, or -1 on error
+ */
+int putnchar(char c, int n)
+{
+	int i, out = 0;
+
+	for (i = 0; i < n; i++)
+	{
+		if (_putchar(c) == -1)
+			return (-1);
+		out++;
+	}
+	return (out);
 }

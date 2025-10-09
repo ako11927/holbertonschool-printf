@@ -1,26 +1,20 @@
 #include "main.h"
 
 /**
- * handle_spec - dispatches a format specifier
- * @sp: specifier character
- * @ap: pointer to the va_list
- *
- * Return: chars printed, or -1 on error
+ * handle_spec - parse at fmt[*i] (which must point at '%') and print it
+ * @fmt: format string
+ * @i:   in/out index (points to '%'; will be advanced past the spec)
+ * @ap:  va_list
+ * Return: number of chars printed, or -1 on error
  */
-int handle_spec(char sp, va_list *ap)
+int handle_spec(const char *fmt, int *i, va_list *ap)
 {
-	if (sp == 'c')
-		return (print_char((char)va_arg(*ap, int)));
-	if (sp == 's')
-		return (print_string(va_arg(*ap, const char *)));
-	if (sp == '%')
-		return (_putchar('%'));
-	if (sp == 'd' || sp == 'i')
-		return (print_int((long)va_arg(*ap, int)));
+	fmt_t f;
+	int r;
 
-	if (_putchar('%') < 0)
+	r = parse_format(fmt, i, &f, ap);
+	if (r == -1)
 		return (-1);
-	if (_putchar(sp) < 0)
-		return (-1);
-	return (2);
+
+	return (print_formatted(&f, ap));
 }
