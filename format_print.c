@@ -32,6 +32,8 @@ static int print_str_fmt(const char *s, int width, int precision, int f_minus)
 	if (!f_minus && pad)
 	{
 		k = putnchar(' ', pad);
+	if (k == -1) return (-1);
+	out += k;
 		if (k == -1)
 			return (-1);
 		out += k;
@@ -283,6 +285,8 @@ if (f.spec == 'o')
 		else
 		{
 			k = emit_prefix(prefix);
+		if (k == -1) return (-1);
+		out += k;
 			if (k == -1)
 				return (-1);
 			out += k;
@@ -319,9 +323,8 @@ if (f.spec == 'o')
 			}
 			while (bi--)
 			{
-				if (_putchar(buf[bi]) == -1)
-					return (-1);
-				out++;
+				if (_putchar(buf[bi]) == -1) return (-1);
+			out++;
 		}
 
 		/* right pad */
