@@ -1,45 +1,50 @@
 #include "main.h"
 
-/**
- * _printf - minimal printf clone for the project
- * @format: format string
- * Return: number of characters written, or -1 on error
- */
 int _printf(const char *format, ...)
 {
 	va_list ap;
-	int out = 0, i = 0;
+	int out = 0;
+	int i, k;
 
-	if (!format)
+	if (format == 0)
 		return (-1);
 
 	va_start(ap, format);
 
-	while (format[i])
+	i = 0;
+	while (format[i] != '\0')
 	{
 		if (format[i] != '%')
 		{
-			if (_putchar(format[i]) == -1) { va_end(ap); return (-1); }
+			if (_putchar(format[i]) == -1)
+			{
+				va_end(ap);
+				return (-1);
+			}
 			out++;
 			i++;
 			continue;
 		}
 
-		/* "%%" fast path */
 		if (format[i + 1] == '%')
 		{
-			if (_putchar('%') == -1) { va_end(ap); return (-1); }
+			if (_putchar('%') == -1)
+			{
+				va_end(ap);
+				return (-1);
+			}
 			out++;
 			i += 2;
 			continue;
 		}
 
-		/* Delegate: parse/print starting at '%', advance i inside */
+		k = handle_spec(format, &i, &ap);
+		if (k == -1)
 		{
-			int added = handle_spec(format, &i, &ap);
-			if (added < 0) { va_end(ap); return (-1); }
-			out += added;
+			va_end(ap);
+			return (-1);
 		}
+		out += k;
 	}
 
 	va_end(ap);

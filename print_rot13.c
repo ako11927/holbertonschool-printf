@@ -1,31 +1,24 @@
 #include "main.h"
 
-/**
- * print_rot13 - prints a ROT13-encoded string
- * @s: string (prints "(null)" if NULL)
- *
- * Return: chars printed or -1 on error
- */
 int print_rot13(const char *s)
 {
-	int i, count = 0;
+	int out = 0;
+	char c;
 
-	if (s == NULL)
+	if (s == 0)
 		s = "(null)";
 
-	for (i = 0; s[i] != '\0'; i++)
+	while (*s)
 	{
-		char c = s[i];
-		char base;
-
+		c = *s++;
 		if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
 		{
-			base = (c >= 'a') ? 'a' : 'A';
+			char base = (c >= 'a') ? 'a' : 'A';
 			c = (char)(base + ((c - base + 13) % 26));
 		}
-		if (_putchar(c) < 0)
+		if (_putchar(c) == -1)
 			return (-1);
-		count++;
+		out++;
 	}
-	return (count);
+	return (out);
 }

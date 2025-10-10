@@ -16,7 +16,6 @@ static int emit_prefix(const char *pfx)
 		n++;
 	}
 	return (n);
-    return (0);
 }
 
 static int print_str_fmt(const char *s, int width, int precision, int f_minus)
@@ -53,7 +52,6 @@ static int print_str_fmt(const char *s, int width, int precision, int f_minus)
 	}
 
 	return (out);
-    return (0);
 }
 
 /* core numeric formatter for diouxXp and b (unsigned) */
@@ -162,7 +160,7 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 		prefix[1] = '\0';
 		prefix[2] = '\0';
 
-if (f.spec == 'o')
+tif (f.spec == 'o')
 		base = 8;
 	else if (f.spec == 'x' || f.spec == 'X')
 	{
@@ -183,7 +181,7 @@ if (f.spec == 'o')
 			if (sval < 0)
 			{
 				neg = 1;
-				uval = (unsigned long)(-(unsigned long)sval);
+				uval = (unsigned long)(-sval);
 			}
 			else
 			{
@@ -322,6 +320,7 @@ if (f.spec == 'o')
 				if (_putchar(buf[bi]) == -1)
 					return (-1);
 				out++;
+			}
 		}
 
 		/* right pad */
@@ -335,10 +334,8 @@ if (f.spec == 'o')
 
 		return (out);
 	}
-    return (0);
 }
 
 /* Fallback: unknown specifier => print it literally as %<spec> */
-    return (0);
 }
 

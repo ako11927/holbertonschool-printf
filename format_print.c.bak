@@ -1,6 +1,29 @@
 #include "main.h"
-#include "num_helpers.h"
+static int _putnbr_unsigned_base(unsigned long n, unsigned base, int upper)
+{
+    char buf[64];
+    const char *digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
+    int i = 0, count = 0;
 
+    if (base < 2 || base > 16) return 0;
+
+    if (n == 0) return _putchar('0'), 1;
+
+    while (n) { buf[i++] = digits[n % base]; n /= base; }
+    while (i--) count += _putchar(buf[i]);
+    return count;
+}
+
+static int _putnbr_signed(long n)
+{
+    int count = 0;
+    unsigned long u;
+
+    if (n < 0) { count += _putchar('-'); /* safe promote */ u = (unsigned long)(-(n + 0L)); }
+    else        u = (unsigned long)n;
+
+    return count + _putnbr_unsigned_base(u, 10, 0);
+}
 
 /* helpers inside this file */
 static int emit_prefix(const char *pfx)
@@ -16,7 +39,6 @@ static int emit_prefix(const char *pfx)
 		n++;
 	}
 	return (n);
-    return (0);
 }
 
 static int print_str_fmt(const char *s, int width, int precision, int f_minus)
@@ -53,7 +75,6 @@ static int print_str_fmt(const char *s, int width, int precision, int f_minus)
 	}
 
 	return (out);
-    return (0);
 }
 
 /* core numeric formatter for diouxXp and b (unsigned) */
@@ -162,15 +183,15 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 		prefix[1] = '\0';
 		prefix[2] = '\0';
 
-if (f.spec == 'o')
-		base = 8;
-	else if (f.spec == 'x' || f.spec == 'X')
-	{
-		base = 16;
-		upper = (f.spec == 'X');
-	}
+		if (f.spec == 'o')
+			base = 8;
+		else if (f.spec == 'x' || f.spec == 'X')
+		{
+			base = 16;
+			upper = (f.spec == 'X');
+		}
 
-	/* length pick */
+		/* length pick */
 		if (is_signed)
 		{
 			if (f.length == 2)
@@ -183,7 +204,7 @@ if (f.spec == 'o')
 			if (sval < 0)
 			{
 				neg = 1;
-				uval = (unsigned long)(-(unsigned long)sval);
+				uval = (unsigned long)(-sval);
 			}
 			else
 			{
@@ -322,6 +343,7 @@ if (f.spec == 'o')
 				if (_putchar(buf[bi]) == -1)
 					return (-1);
 				out++;
+			}
 		}
 
 		/* right pad */
@@ -335,10 +357,17 @@ if (f.spec == 'o')
 
 		return (out);
 	}
-    return (0);
 }
 
 /* Fallback: unknown specifier => print it literally as %<spec> */
-    return (0);
+int print__unknown_spec(const fmt_t *f_in)
+{
+    int out = 0;
+    if (_putchar('%') == -1) return (-1);
+    out++;
+    if (f_in->spec) {
+        if (_putchar(f_in->spec) == -1) return (-1);
+        out++;
+    }
+    return out;
 }
-

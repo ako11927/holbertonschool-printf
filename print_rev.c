@@ -1,24 +1,23 @@
 #include "main.h"
 
-/**
- * print_rev - prints a reversed string
- * @s: string (prints "(null)" if NULL)
- *
- * Return: chars printed or -1 on error
- */
 int print_rev(const char *s)
 {
-	int len = 0, i, count = 0;
+	int out = 0;
+	int len = 0;
+	const char *p;
 
-	if (s == NULL)
+	if (s == 0)
 		s = "(null)";
-	while (s[len] != '\0')
+
+	p = s;
+	while (*p++)
 		len++;
-	for (i = len - 1; i >= 0; i--)
+
+	while (len--)
 	{
-		if (_putchar(s[i]) < 0)
+		if (_putchar(s[len]) == -1)
 			return (-1);
-		count++;
+		out++;
 	}
-	return (count);
+	return (out);
 }

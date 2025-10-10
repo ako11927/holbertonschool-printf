@@ -1,22 +1,16 @@
 #include "main.h"
 
-/**
- * print_string - prints a C string
- * @s: string to print (prints "(null)" if NULL)
- *
- * Return: number of chars printed, or -1 on error
- */
 int print_string(const char *s)
 {
-	int i, count = 0;
+	int out = 0;
 
-	if (s == NULL)
+	if (s == 0)
 		s = "(null)";
-	for (i = 0; s[i] != '\0'; i++)
+	while (*s != '\0')
 	{
-		if (_putchar(s[i]) < 0)
+		if (_putchar(*s++) == -1)
 			return (-1);
-		count++;
+		out++;
 	}
-	return (count);
+	return (out);
 }

@@ -1,39 +1,40 @@
 #include "main.h"
 
-/**
- * print_S - prints string with non-printables as \xHH (uppercase)
- * @s: string (prints "(null)" if NULL)
- *
- * Return: chars printed or -1 on error
- */
 int print_S(const char *s)
 {
-	int i, count = 0;
+	int out = 0;
+	unsigned char c;
+	char hex[2];
+	int d;
 
-	if (s == NULL)
+	if (s == 0)
 		s = "(null)";
-	for (i = 0; s[i] != '\0'; i++)
+
+	while (*s != '\0')
 	{
-		unsigned char c = (unsigned char)s[i];
-
-		if (c < 32 || c >= 127)
+		c = (unsigned char)*s++;
+		if (c >= 32 && c < 127)
 		{
-			int hi = (c >> 4) & 0xF, lo = c & 0xF;
-			char H = (char)(hi < 10 ? '0' + hi : 'A' + (hi - 10));
-			char L = (char)(lo < 10 ? '0' + lo : 'A' + (lo - 10));
+			if (_putchar((char)c) == -1)
+				return (-1);
+			out++;
+			continue;
+		}
+		if (_putchar('\\') == -1)
+			return (-1);
+		out++;
+		if (_putchar('x') == -1)
+			return (-1);
+		out++;
 
-			if (_putchar('\\') < 0 || _putchar('x') < 0)
-				return (-1);
-			if (_putchar(H) < 0 || _putchar(L) < 0)
-				return (-1);
-			count += 4;
-		}
-		else
-		{
-			if (_putchar((char)c) < 0)
-				return (-1);
-			count++;
-		}
+		d = (c >> 4) & 0xF;
+		hex[0] = (d < 10) ? (char)('0' + d) : (char)('A' + d - 10);
+		d = c & 0xF;
+		hex[1] = (d < 10) ? (char)('0' + d) : (char)('A' + d - 10);
+
+		if (_putchar(hex[0]) == -1 || _putchar(hex[1]) == -1)
+			return (-1);
+		out += 2;
 	}
-	return (count);
+	return (out);
 }

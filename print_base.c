@@ -1,32 +1,30 @@
 #include "main.h"
 
-/**
- * print_base - print unsigned long in base (2..16)
- * @n: number
- * @base: base
- * @uppercase: non-zero => A..F, else a..f
- * Return: chars printed or -1
- */
-int print_base(unsigned long n, int base, int uppercase)
+int print_base(unsigned long v, int base, int uppercase)
 {
-	char stack[64];
-	const char *d = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
-	int top = 0, out = 0;
+	char buf[64];
+	int bi = 0;
+	int out = 0;
 
 	if (base < 2 || base > 16)
-		return (0);
+		return (-1);
 
-	if (n == 0)
-		stack[top++] = '0';
-	else {
-		while (n) {
-			stack[top++] = d[n % (unsigned)base];
-			n /= (unsigned)base;
-		}
+	if (v == 0)
+		buf[bi++] = '0';
+	while (v > 0)
+	{
+		int d = (int)(v % (unsigned long)base);
+
+		if (d < 10)
+			buf[bi++] = (char)('0' + d);
+		else
+			buf[bi++] = (char)((uppercase ? 'A' : 'a') + (d - 10));
+		v /= (unsigned long)base;
 	}
 
-	while (top) {
-		if (_putchar(stack[--top]) == -1)
+	while (bi--)
+	{
+		if (_putchar(buf[bi]) == -1)
 			return (-1);
 		out++;
 	}
