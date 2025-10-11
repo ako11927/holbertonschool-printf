@@ -1,41 +1,28 @@
 #include "main.h"
 #include <unistd.h>
 
-#define BUF_SZ 1024
-
-static char buf[BUF_SZ];
-static int bidx;
-
 int _putchar(char c)
 {
-	buf[bidx++] = c;
-	if (bidx == BUF_SZ)
-	{
-		if (write(1, buf, bidx) != bidx)
-			return (-1);
-		bidx = 0;
-	}
-	return (1);
-}
+    static char buf[1024];
+    static int idx;
+    int wrote = 0;
 
-void _putchar_flush(void)
-{
-	if (bidx > 0)
-	{
-		(void)write(1, buf, bidx);
-		bidx = 0;
-	}
-}
+    /* Flush trigger: pass c == 0 */
+    if (c == 0) {
+        if (idx > 0) {
+            wrote = write(1, buf, idx);
+            idx = 0;
+            (void)wrote; /* ignore in this project; _printf tracks counts */
+        }
+        return 0;
+    }
 
-int putnchar(char c, int n)
-{
-	int i, out = 0;
+    buf[idx++] = c;
 
-	for (i = 0; i < n; i++)
-	{
-		if (_putchar(c) == -1)
-			return (-1);
-		out++;
-	}
-	return (out);
+    if (idx == (int)sizeof(buf)) {
+        wrote = write(1, buf, idx);
+        idx = 0;
+        (void)wrote;
+    }
+    return 1; /* we buffered one char */
 }
