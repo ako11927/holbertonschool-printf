@@ -1,18 +1,20 @@
 #include "main.h"
 
-/*
- * handle_spec - called when fmt[*i] == '%'
- * Advances *i past the full conversion and prints it via print_formatted().
- * Returns the number of chars written, or -1 on error.
+/**
+ * handle_spec - parse and print one directive starting at '%' in fmt[*i]
+ * @fmt: format string
+ * @i: index of '%' on entry; set to the char after the spec on return
+ * @ap: va_list
+ * Return: chars printed on success; -1 on error
  */
 int handle_spec(const char *fmt, int *i, va_list *ap)
 {
-    int j = *i;
-    fmt_t f;
+	fmt_t f;
+	int r;
 
-    if (parse_format(fmt, &j, &f, ap) == -1)
-        return (-1);
+	if (parse_format(fmt, i, &f, ap) == -1)
+		return (-1);
 
-    *i = j; /* advance caller index to after the conversion */
-    return print_formatted(&f, ap);
+	r = print_formatted(&f, ap);
+	return (r);
 }

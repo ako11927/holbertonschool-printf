@@ -1,6 +1,6 @@
 #include "main.h"
 
-int print_pointer(void *p)
+int print_pointer(const void *p)
 {
 	unsigned long v = (unsigned long)p;
 	int out = 0;
