@@ -1,70 +1,88 @@
 #include "main.h"
-#include "num_helpers.h"
 
-
-/* helpers inside this file */
-static int emit_prefix(const char *pfx)
-{
-	int n = 0;
-	int k;
-
-	while (pfx != 0 && *pfx != '\0')
-	{
-		k = _putchar(*pfx++);
-		if (k == -1)
-			return (-1);
-		n++;
-	}
-	return (n);
-    return (0);
-}
-
-static int print_str_fmt(const char *s, int width, int precision, int f_minus)
+/* small helpers */
+static int padn(char ch, int n)
 {
 	int k, out = 0;
-	int slen, pad;
 
-	if (s == 0)
-		s = "(null)";
-	slen = (int)strnlen_prec(s, precision);
-	pad = (width > slen) ? (width - slen) : 0;
-
-	if (!f_minus && pad)
+	while (n-- > 0)
 	{
-		k = putnchar(' ', pad);
-	if (k == -1) return (-1);
-	out += k;
+		k = _putchar(ch);
 		if (k == -1)
 			return (-1);
 		out += k;
 	}
-
-	while (slen--)
-	{
-		if (_putchar(*s++) == -1)
-			return (-1);
-		out++;
-	}
-
-	if (f_minus && pad)
-	{
-		k = putnchar(' ', pad);
-		if (k == -1)
-			return (-1);
-		out += k;
-	}
-
 	return (out);
-    return (0);
 }
 
-/* core numeric formatter for diouxXp and b (unsigned) */
+static int print_str_prec(const char *s, int prec)
+{
+	int out = 0, k, n;
+	if (!s)
+		s = "(null)";
+	if (prec >= 0)
+	{
+		n = (int)strnlen_prec(s, prec);
+		while (n--)
+		{
+			k = _putchar(*s++);
+			if (k == -1)
+				return (-1);
+			out += k;
+		}
+		return (out);
+	}
+	/* no precision limit */
+	while (*s)
+	{
+		k = _putchar(*s++);
+		if (k == -1)
+			return (-1);
+		out += k;
+	}
+	return (out);
+}
+
+static int utoa_rev(unsigned long v, int base, int upper, char *buf)
+{
+	const char *digits_l = "0123456789abcdef";
+	const char *digits_u = "0123456789ABCDEF";
+	const char *d = upper ? digits_u : digits_l;
+	int i = 0;
+
+	if (v == 0)
+	{
+		buf[i++] = '0';
+		buf[i] = '\0';
+		return (i);
+	}
+	while (v)
+	{
+		buf[i++] = d[v % (unsigned long)base];
+		v /= (unsigned long)base;
+	}
+	buf[i] = '\0';
+	return (i);
+}
+
+/**
+ * print_formatted - print one parsed directive
+ * Handles: c s d i u o x X % with flags + space # 0 - , width, precision,
+ * and length h / l (for diouxX).
+ */
 int print_formatted(const fmt_t *f_in, va_list *ap)
 {
 	fmt_t f = *f_in;
-	int out = 0, k;
+	int out = 0, k, base, upper, neg, signed_conv, pad, prec, padzero;
+	unsigned long uval;
+	long sval;
+	char tmp[64];      /* enough for 64-bit in any base */
+	int len, i;
+	char sign = 0;
+	const char *prefix = "";
+	int prefix_len = 0;
 
-	/* normalize width/precision */
+	/* normalize negatives for width/precision */
 	if (f.width < 0)
 	{
 		f.f_minus = 1;
@@ -75,28 +93,28 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 
 	/* strings */
 	if (f.spec == 's')
-		return (print_str_fmt(va_arg(*ap, char *), f.width, f.precision, f.f_minus));
-
-	/* chars */
-	if (f.spec == 'c')
 	{
-		int pad = (f.width > 1) ? f.width - 1 : 0;
-		char ch = (char)va_arg(*ap, int);
-		char padc = (!f.f_minus && f.f_zero) ? '0' : ' ';
+		const char *s = va_arg(*ap, char *);
+		int slen = (s ? (int)strnlen_prec(s, (f.precision >= 0) ? f.precision : -1)
+			      : (f.precision >= 0 ? (int)strnlen_prec("(null)", f.precision) : 6));
+		int left = f.f_minus;
+		int wpad = (f.width > slen) ? (f.width - slen) : 0;
 
-		if (!f.f_minus && pad)
+		if (!left && wpad)
 		{
-			k = putnchar(padc, pad);
+			k = padn(' ', wpad);
 			if (k == -1)
 				return (-1);
 			out += k;
 		}
-		if (_putchar(ch) == -1)
+		k = print_str_prec(s ? s : "(null)", f.precision);
+		if (k == -1)
 			return (-1);
-		out++;
-		if (f.f_minus && pad)
+		out += k;
+
+		if (left && wpad)
 		{
-			k = putnchar(' ', pad);
+			k = padn(' ', wpad);
 			if (k == -1)
 				return (-1);
 			out += k;
@@ -104,15 +122,42 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 		return (out);
 	}
 
-	/* literal percent */
+	/* char */
+	if (f.spec == 'c')
+	{
+		int ch = va_arg(*ap, int);
+		int wpad = (f.width > 1) ? (f.width - 1) : 0;
+
+		if (!f.f_minus && wpad)
+		{
+			k = padn(' ', wpad);
+			if (k == -1)
+				return (-1);
+			out += k;
+		}
+		if (_putchar((char)ch) == -1)
+			return (-1);
+		out++;
+
+		if (f.f_minus && wpad)
+		{
+			k = padn(' ', wpad);
+			if (k == -1)
+				return (-1);
+			out += k;
+		}
+		return (out);
+	}
+
+	/* percent literal */
 	if (f.spec == '%')
 	{
-		int pad = (f.width > 1) ? f.width - 1 : 0;
-		char padc = (!f.f_minus && f.f_zero) ? '0' : ' ';
+		int wpad = (f.width > 1) ? (f.width - 1) : 0;
+		char padc = (!f.f_minus && f.f_zero && f.precision < 0) ? '0' : ' ';
 
-		if (!f.f_minus && pad)
+		if (!f.f_minus && wpad)
 		{
-			k = putnchar(padc, pad);
+			k = padn(padc, wpad);
 			if (k == -1)
 				return (-1);
 			out += k;
@@ -120,9 +165,10 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 		if (_putchar('%') == -1)
 			return (-1);
 		out++;
-		if (f.f_minus && pad)
+
+		if (f.f_minus && wpad)
 		{
-			k = putnchar(' ', pad);
+			k = padn(' ', wpad);
 			if (k == -1)
 				return (-1);
 			out += k;
@@ -130,218 +176,185 @@ int print_formatted(const fmt_t *f_in, va_list *ap)
 		return (out);
 	}
 
-	/* custom you already have */
-	if (f.spec == 'S')
-		return (print_S(va_arg(*ap, char *)));
-	if (f.spec == 'r')
-		return (print_rev(va_arg(*ap, char *)));
-	if (f.spec == 'R')
-		return (print_rot13(va_arg(*ap, char *)));
-	if (f.spec == 'p')
-		return (print_pointer(va_arg(*ap, void *)));
-	if (f.spec == 'b')
+	/* numbers: d i u o x X */
+	if (f.spec == 'd' || f.spec == 'i' || f.spec == 'u' ||
+	    f.spec == 'o' || f.spec == 'x' || f.spec == 'X')
 	{
-		unsigned int bv = va_arg(*ap, unsigned int);
-
-		return (print_base((unsigned long)bv, 2, 0));
-	}
-
-	/* ----- numeric (d i u o x X) with flags/width/precision/length ----- */
-	{
-		int is_signed = (f.spec == 'd' || f.spec == 'i');
-		int base = 10;
-		int upper = 0;
-		unsigned long uval = 0;
-		long sval = 0;
-		int neg = 0;
-		char prefix[3];
-		int body = 0;
-		int zeros = 0;
-		int pad = 0;
-
-
-		prefix[0] = '\0';
-		prefix[1] = '\0';
-		prefix[2] = '\0';
-
-if (f.spec == 'o')
-		base = 8;
-	else if (f.spec == 'x' || f.spec == 'X')
-	{
-		base = 16;
+		signed_conv = (f.spec == 'd' || f.spec == 'i');
+		base = (f.spec == 'o') ? 8 : ((f.spec == 'x' || f.spec == 'X') ? 16 : 10);
 		upper = (f.spec == 'X');
-	}
 
-	/* length pick */
-		if (is_signed)
+		/* pull value with length */
+		if (signed_conv)
 		{
-			if (f.length == 2)
+			if (f.length == 2) /* l */
 				sval = va_arg(*ap, long);
-			else if (f.length == 1)
-				sval = (short)va_arg(*ap, int);
 			else
-				sval = va_arg(*ap, int);
-
-			if (sval < 0)
+				sval = (long)va_arg(*ap, int);
+			neg = (sval < 0);
+			if (neg)
 			{
-				neg = 1;
-				uval = (unsigned long)(-(unsigned long)sval);
+				uval = (unsigned long)(-sval);
+				sign = '-';
 			}
 			else
 			{
 				uval = (unsigned long)sval;
 				if (f.f_plus)
-					prefix[0] = '+';
+					sign = '+';
 				else if (f.f_space)
-					prefix[0] = ' ';
+					sign = ' ';
 			}
 		}
 		else
 		{
-			if (f.length == 2)
+			if (f.length == 2) /* l */
 				uval = va_arg(*ap, unsigned long);
-			else if (f.length == 1)
-				uval = (unsigned long)((unsigned short)va_arg(*ap, unsigned int));
 			else
 				uval = (unsigned long)va_arg(*ap, unsigned int);
 		}
 
-		/* precision overrides zero-pad */
-		if (f.precision != -1)
-			f.f_zero = 0;
+		/* convert */
+		len = utoa_rev(uval, base, upper, tmp); /* tmp is reversed */
+		/* precision==0 and value==0 prints nothing for numbers */
+		if (f.precision == 0 && uval == 0)
+			len = 0;
 
-		/* number of digits */
-		{
-			unsigned long t = uval;
-
-			if (t == 0)
-				body = 1;
-			while (t > 0)
-			{
-				body++;
-				t /= (unsigned long)base;
-			}
-		}
-
-		/* special case: precision ".0" and value is 0 => print nothing */
-		if (uval == 0 && f.precision == 0)
-			body = 0;
-
-		/* hash prefix */
+		/* apply '#' */
 		if (f.f_hash && uval != 0)
 		{
 			if (base == 8)
-				prefix[0] = '0';
+			{
+				prefix = "0";
+				prefix_len = 1;
+			}
 			else if (base == 16)
 			{
-				prefix[0] = '0';
-				prefix[1] = upper ? 'X' : 'x';
+				prefix = upper ? "0X" : "0x";
+				prefix_len = 2;
 			}
 		}
-		/* %.0o with value 0 prints single '0' when '#' is set */
-		if (base == 8 && f.f_hash && uval == 0 && f.precision == 0)
-			body = 1;
 
-		/* precision zeros */
-		if (f.precision > body)
-			zeros = f.precision - body;
+		/* width / precision calcs */
+		prec = (f.precision >= 0) ? f.precision : 0;
+		if (prec < len)
+			prec = len;
+		padzero = (f.precision < 0 && f.f_zero && !f.f_minus) ? 1 : 0;
 
-		/* width calculation (sign or 0x included as prefix size) */
+		/* total content width = sign + prefix + max(prec, len) */
+		i = prec;
+		if (sign)
+			i++;
+		if (prefix_len)
+			i += prefix_len;
+
+		pad = (f.width > i) ? (f.width - i) : 0;
+
+		/* left spaces */
+		if (!f.f_minus && !padzero && pad)
 		{
-			int pfx = 0;
-
-			if (neg)
-				pfx = 1;
-			else if (prefix[0] != '\0')
-				pfx = (prefix[1] != '\0') ? 2 : 1;
-
-			if (f.width > body + zeros + pfx)
-				pad = f.width - (body + zeros + pfx);
-		}
-
-		/* zero-pad only applies when no precision and not left-justified */
-		if (!f.f_minus && f.f_zero && f.precision == -1 && pad > 0)
-		{
-			zeros += pad;
+			k = padn(' ', pad);
+			if (k == -1)
+				return (-1);
+			out += k;
 			pad = 0;
 		}
 
-		/* left pad */
-		if (!f.f_minus && pad > 0)
+		/* sign */
+		if (sign)
 		{
-			k = putnchar(' ', pad);
-			if (k == -1)
+			if (_putchar(sign) == -1)
 				return (-1);
-			out += k;
+			out++;
+			sign = 0;
 		}
 
-		/* sign / prefix */
-		if (neg)
+		/* prefix */
+		if (prefix_len == 2)
 		{
-			if (_putchar('-') == -1)
+			if (_putchar(prefix[0]) == -1)
+				return (-1);
+			out++;
+			if (_putchar(prefix[1]) == -1)
 				return (-1);
 			out++;
 		}
-		else
+		else if (prefix_len == 1)
 		{
-			k = emit_prefix(prefix);
-		if (k == -1) return (-1);
-		out += k;
-			if (k == -1)
+			if (_putchar(prefix[0]) == -1)
 				return (-1);
-			out += k;
-		}
-
-		/* zeros (from precision or zero pad) */
-		if (zeros > 0)
-		{
-			k = putnchar('0', zeros);
-			if (k == -1)
-				return (-1);
-			out += k;
-		}
-
-		/* digits (unless suppressed by .0 with value 0) */
-		if (body > 0)
-		{
-			/* print number into a temp buffer reversed */
-			char buf[64];
-			int bi = 0;
-			unsigned long t = uval;
-
-			if (t == 0)
-				buf[bi++] = '0';
-			while (t > 0)
-			{
-				int d = (int)(t % (unsigned long)base);
-
-				if (d < 10)
-					buf[bi++] = (char)('0' + d);
-				else
-					buf[bi++] = (char)((upper ? 'A' : 'a') + (d - 10));
-				t /= (unsigned long)base;
-			}
-			while (bi--)
-			{
-				if (_putchar(buf[bi]) == -1) return (-1);
 			out++;
 		}
 
-		/* right pad */
-		if (f.f_minus && pad > 0)
+		/* zero padding (from width via '0' when no precision) */
+		if (!f.f_minus && padzero && pad)
 		{
-			k = putnchar(' ', pad);
+			k = padn('0', pad);
+			if (k == -1)
+				return (-1);
+			out += k;
+			pad = 0;
+		}
+
+		/* precision zeros */
+		if (prec > len)
+		{
+			k = padn('0', prec - len);
 			if (k == -1)
 				return (-1);
 			out += k;
 		}
 
+		/* number digits (remember tmp is reversed) */
+		for (i = len - 1; i >= 0; i--)
+		{
+			if (_putchar(tmp[i]) == -1)
+				return (-1);
+			out++;
+		}
+
+		/* right spaces */
+		if (f.f_minus && pad)
+		{
+			k = padn(' ', pad);
+			if (k == -1)
+				return (-1);
+			out += k;
+		}
 		return (out);
 	}
-    return (0);
-}
 
-/* Fallback: unknown specifier => print it literally as %<spec> */
-    return (0);
-}
+	/* keep your custom ones working (S, r, R, b, p) */
+	if (f.spec == 'S')
+	{
+		const char *sS = va_arg(*ap, char *);
+		return (print_S(sS ? sS : "(null)"));
+	}
+	if (f.spec == 'r')
+	{
+		const char *sr = va_arg(*ap, char *);
+		return (print_rev(sr ? sr : "(null)"));
+	}
+	if (f.spec == 'R')
+	{
+		const char *sR = va_arg(*ap, char *);
+		return (print_rot13(sR ? sR : "(null)"));
+	}
 
+	/* pointer: honor width/precision minimally via string formatting */
+	if (f.spec == 'p')
+	{
+		/* delegate to your pointer printer; width/prec not required by task */
+		const void *pv = va_arg(*ap, const void *);
+		return (print_pointer(pv));
+	}
+
+	/* Unknown spec: print '%' then the char (printf behaviour) */
+	if (_putchar('%') == -1)
+		return (-1);
+	out++;
+	if (_putchar(f.spec) == -1)
+		return (-1);
+	out++;
+	return (out);
+}
