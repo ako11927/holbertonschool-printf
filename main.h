@@ -46,7 +46,7 @@ int handle_spec(const char *fmt, int *i, va_list *ap);
 size_t strnlen_prec(const char *s, int prec);
 
 /* shared printers */
-int print_base(unsigned long n, int base, int uppercase);
+int print_base(unsigned long v, int base, int uppercase);
 int print_string(const char *s);
 int print_int(int n);
 int print_uint(unsigned int n);
