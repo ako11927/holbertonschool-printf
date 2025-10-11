@@ -1,9 +1,9 @@
 #include "main.h"
 
 /**
- * _printf - minimal printf clone for this project
+ * _printf - project printf
  * @format: format string
- * Return: number of characters printed, or -1 on error
+ * Return: chars printed, or -1 on error
  */
 int _printf(const char *format, ...)
 {
@@ -24,6 +24,7 @@ int _printf(const char *format, ...)
 			if (_putchar(format[i]) == -1)
 			{
 				va_end(ap);
+				_putchar_flush();
 				return (-1);
 			}
 			out++;
@@ -31,12 +32,13 @@ int _printf(const char *format, ...)
 			continue;
 		}
 
-		/* "%%" fast path */
+		/* "%%" */
 		if (format[i + 1] == '%')
 		{
 			if (_putchar('%') == -1)
 			{
 				va_end(ap);
+				_putchar_flush();
 				return (-1);
 			}
 			out++;
@@ -44,16 +46,19 @@ int _printf(const char *format, ...)
 			continue;
 		}
 
-		/* delegate full conversion; handle_spec advances i */
+		/* delegate; handle_spec moves i past the conversion */
 		k = handle_spec(format, &i, &ap);
 		if (k == -1)
 		{
 			va_end(ap);
+			_putchar_flush();
 			return (-1);
 		}
 		out += k;
 	}
 
 	va_end(ap);
+	/* IMPORTANT: flush our internal buffered writer so the checker sees output */
+	_putchar_flush();
 	return (out);
 }
